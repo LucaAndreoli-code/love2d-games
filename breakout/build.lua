@@ -1,6 +1,6 @@
 return {
     -- basic settings:
-    name = 'BASE', -- name of the game for your executable
+    name = 'Breakout', -- name of the game for your executable
     developer = 'Luca Andreoli', -- dev name used in metadata of the file
     output = 'dist', -- output location for your game, defaults to $SAVE_DIRECTORY
     version = '1.1a', -- 'version' of your game, used to name the folder in output
