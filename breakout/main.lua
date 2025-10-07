@@ -4,7 +4,7 @@ function love.load()
     Paddle = {
         x = W / 2 - 100,
         y = H - 50,
-        width = 200,
+        width = W / 6,
         height = 10,
         speed = 300
     }
@@ -18,7 +18,7 @@ function love.load()
     }
 
     GameState = {
-        lives = 1,
+        lives = 3,
         score = 0,
         state = 'start' -- start, playing, gameover
     }
