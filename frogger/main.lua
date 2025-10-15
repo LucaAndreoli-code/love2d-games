@@ -7,9 +7,10 @@ end
 
 function love.load()
     -- Constants
-    GRID_WIDTH = 13  -- numero di colonne
-    GRID_HEIGHT = 12 -- numero di righe (corsie)
-    NUM_LILIPAD = 6  -- numero di ninfee nella corsia finale
+    GRID_WIDTH = 13    -- numero di colonne
+    GRID_HEIGHT = 12   -- numero di righe (corsie)
+    NUM_LILIPAD = 6    -- numero di ninfee nella corsia finale
+    HOP_DURATION = 0.5 -- durata del salto in secondi
 
     W, H = love.graphics.getDimensions()
     LaneHeight = H / GRID_HEIGHT
@@ -138,6 +139,7 @@ function love.load()
         gridY = 12,
         width = TileWidth,
         height = LaneHeight,
+
         isOnPlatform = function(self, obstacle, laneY)
             return self.x < obstacle.x + TileWidth and
                 self.x + self.width > obstacle.x and
@@ -148,20 +150,44 @@ function love.load()
             self.x = TileWidth * math.floor(GRID_WIDTH / 2)
             self.y = (GRID_HEIGHT - 1) * LaneHeight
             self.gridY = 12
-        end
+            self.isHopping = false
+            self.hopProgress = 0
+        end,
+
+        isHopping = false,
+        hopProgress = 0,
+        startX = 0,
+        startY = 0,
+        targetX = 0,
+        targetY = 0,
     }
 
     love.window.setTitle("Frogger")
+end
+
+function love.update(dt)
+    if Frogger.isHopping then
+        -- Aumenta il progresso del salto
+        Frogger.hopProgress = Frogger.hopProgress + (dt / HOP_DURATION)
+
+        if Frogger.hopProgress >= 1.0 then
+            -- Salto completato
+            Frogger.hopProgress = 1.0
+            Frogger.x = Frogger.targetX
+            Frogger.y = Frogger.targetY
+            Frogger.isHopping = false
+        else
+            -- Interpola la posizione
+            Frogger.x = Frogger.startX + (Frogger.targetX - Frogger.startX) * Frogger.hopProgress
+            Frogger.y = Frogger.startY + (Frogger.targetY - Frogger.startY) * Frogger.hopProgress
+        end
+    end
 end
 
 function love.draw()
     DrawLanes()
     DrawObstacles()
     DrawFrogger()
-end
-
-function love.update(dt)
-    -- Update logic can be added here if needed
 end
 
 function DrawFrogger()
@@ -233,7 +259,7 @@ function DrawObstacles()
         end
 
 
-        --check alla fine di tutti gli altri per lane e non per ogni ostacolo altrimenti si resetta più volte e sbarella
+        -- check alla fine di tutti gli altri per lane e non per ogni ostacolo altrimenti si resetta più volte e sbarella
         if lane.type == 'water' and index == Frogger.gridY and not isOnAnyPlatform then
             print("Game Over! Drowned at lane " .. index)
             Frogger:resetPosition()
@@ -286,24 +312,44 @@ function DrawLaneTiles(lane, laneIndex, laneY)
 end
 
 function love.keypressed(key)
+    if Frogger.isHopping then
+        return
+    end
+
+    -- Salva posizione di partenza
+    Frogger.startX = Frogger.x
+    Frogger.startY = Frogger.y
+
+    -- Calcola target in base al tasto
     if key == 'up' then
-        if Frogger.y - LaneHeight >= 0 then
-            Frogger.y = Frogger.y - LaneHeight
+        if Frogger.gridY > 1 then      
+            Frogger.targetX = Frogger.x
+            Frogger.targetY = Frogger.y - LaneHeight
             Frogger.gridY = Frogger.gridY - 1
+            Frogger.isHopping = true 
+            Frogger.hopProgress = 0
         end
     elseif key == 'down' then
-        if Frogger.y + LaneHeight < H then
-            Frogger.y = Frogger.y + LaneHeight
+        if Frogger.gridY < GRID_HEIGHT then
+            Frogger.targetX = Frogger.x
+            Frogger.targetY = Frogger.y + LaneHeight
             Frogger.gridY = Frogger.gridY + 1
+            Frogger.isHopping = true
+            Frogger.hopProgress = 0
         end
     elseif key == 'left' then
         if Frogger.x - TileWidth >= 0 then
-            Frogger.x = Frogger.x - TileWidth
+            Frogger.targetX = Frogger.x - TileWidth
+            Frogger.targetY = Frogger.y
+            Frogger.isHopping = true
+            Frogger.hopProgress = 0
         end
     elseif key == 'right' then
         if Frogger.x + TileWidth < W then
-            Frogger.x = Frogger.x + TileWidth
+            Frogger.targetX = Frogger.x + TileWidth
+            Frogger.targetY = Frogger.y
+            Frogger.isHopping = true
+            Frogger.hopProgress = 0
         end
     end
-    print("Frogger in lane " .. Frogger.gridY)
 end
