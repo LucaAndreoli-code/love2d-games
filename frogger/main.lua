@@ -135,6 +135,7 @@ function love.load()
     Frogger = {
         x = TileWidth * math.floor(GRID_WIDTH / 2),
         y = (GRID_HEIGHT - 1) * LaneHeight,
+        gridY = 12,
         width = TileWidth,
         height = LaneHeight,
         isOnPlatform = function(self, obstacle, laneY)
@@ -142,6 +143,11 @@ function love.load()
                 self.x + self.width > obstacle.x and
                 self.y < laneY + LaneHeight and
                 self.y + self.height > laneY
+        end,
+        resetPosition = function(self)
+            self.x = TileWidth * math.floor(GRID_WIDTH / 2)
+            self.y = (GRID_HEIGHT - 1) * LaneHeight
+            self.gridY = 12
         end
     }
 
@@ -169,6 +175,7 @@ function DrawObstacles()
     for index = #Lanes, 1, -1 do
         local lane = Lanes[index]
         local laneY = (index - 1) * LaneHeight
+        local isOnAnyPlatform = false
 
         for _, obstacle in ipairs(lane.obstacles) do
             -- Update obstacle position
@@ -193,21 +200,43 @@ function DrawObstacles()
             elseif obstacle.type == 'crocodile' then
                 love.graphics.setColor(0, 0.5, 0, 1)
             else
-                love.graphics.setColor(1, 1, 1, 1) -- default
+                love.graphics.setColor(1, 1, 1, 1)
             end
 
             love.graphics.rectangle('fill', obstacle.x, laneY, TileWidth, LaneHeight)
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.print(obstacle.type, obstacle.x + 5, laneY + 5)
 
-            if (Frogger:isOnPlatform(obstacle, laneY)) then
-                if lane.type == 'road' or obstacle.type == 'crocodile' then
-                    print("Game Over!")
-                else
-                    print("Continua")
+            -- Check if Frogger is on this obstacle
+            if Frogger:isOnPlatform(obstacle, laneY) then
+                if lane.type == 'road' then
+                    -- Hit by vehicle
+                    if obstacle.type == 'car' or obstacle.type == 'truck' then
+                        print("Game Over! Hit by vehicle")
+                        Frogger:resetPosition()
+                    end
+                elseif lane.type == 'water' then
+                    isOnAnyPlatform = true
+
+                    if obstacle.type == 'crocodile' then
+                        print("Game Over! Eaten by crocodile")
+                        Frogger:resetPosition()
+                    else
+                        Frogger.x = Frogger.x + lane.speed * lane.direction * love.timer.getDelta()
+
+                        -- Keep within bounds
+                        if Frogger.x < 0 then Frogger.x = 0 end
+                        if Frogger.x + Frogger.width > W then Frogger.x = W - Frogger.width end
+                    end
                 end
-                Frogger.x = Frogger.x + lane.speed * lane.direction * love.timer.getDelta() -- move with platform
             end
+        end
+
+
+        --check alla fine di tutti gli altri per lane e non per ogni ostacolo altrimenti si resetta più volte e sbarella
+        if lane.type == 'water' and index == Frogger.gridY and not isOnAnyPlatform then
+            print("Game Over! Drowned at lane " .. index)
+            Frogger:resetPosition()
         end
     end
 end
@@ -252,7 +281,7 @@ function DrawLaneTiles(lane, laneIndex, laneY)
         local x = (i - 1) * (TileWidth + gapSize)
         love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(laneIndex .. ": " .. i, x, laneY + 30)
+        love.graphics.print(laneIndex .. ": " .. i - 1, x, laneY + 30)
     end
 end
 
@@ -260,10 +289,12 @@ function love.keypressed(key)
     if key == 'up' then
         if Frogger.y - LaneHeight >= 0 then
             Frogger.y = Frogger.y - LaneHeight
+            Frogger.gridY = Frogger.gridY - 1
         end
     elseif key == 'down' then
         if Frogger.y + LaneHeight < H then
             Frogger.y = Frogger.y + LaneHeight
+            Frogger.gridY = Frogger.gridY + 1
         end
     elseif key == 'left' then
         if Frogger.x - TileWidth >= 0 then
@@ -274,4 +305,5 @@ function love.keypressed(key)
             Frogger.x = Frogger.x + TileWidth
         end
     end
+    print("Frogger in lane " .. Frogger.gridY)
 end
