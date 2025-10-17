@@ -1,5 +1,5 @@
 local Debug = {
-    enabled = true
+    enabled = false
 }
 
 function Debug:toggle(key)

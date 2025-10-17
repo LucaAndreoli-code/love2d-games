@@ -75,6 +75,25 @@ function Frogger:draw()
     love.graphics.rectangle('line', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
 end
 
+function Frogger:handleHopping(dt)
+    if Frogger.isHopping then
+        -- Aumenta il progresso del salto
+        Frogger.hopProgress = Frogger.hopProgress + (dt / Constants.HOP_DURATION)
+
+        if Frogger.hopProgress >= 1.0 then
+            -- Salto completato
+            Frogger.hopProgress = 1.0
+            Frogger.x = Frogger.targetX
+            Frogger.y = Frogger.targetY
+            Frogger.isHopping = false
+        else
+            -- Interpola la posizione
+            Frogger.x = Frogger.startX + (Frogger.targetX - Frogger.startX) * Frogger.hopProgress
+            Frogger.y = Frogger.startY + (Frogger.targetY - Frogger.startY) * Frogger.hopProgress
+        end
+    end
+end
+
 function Frogger:move(key)
     if self.isHopping then
         return

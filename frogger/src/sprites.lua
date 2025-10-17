@@ -44,6 +44,27 @@ function Sprites.load()
         spritesheet:getDimensions()
     )
 
+    local logPosX = 1
+    local logPosY = 134
+
+    sprites.left_log = love.graphics.newQuad(
+        logPosX, logPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    sprites.center_log = love.graphics.newQuad(
+        logPosX + (px16 + 2), logPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    sprites.right_log = love.graphics.newQuad(
+        logPosX + (px16 * 2 + 2 + 2), logPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
     -- TODO newQuad all the sprites
 
     return { sheet = spritesheet, quads = sprites }
