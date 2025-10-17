@@ -1,3 +1,5 @@
+local Sprites = require("resources.sprite.sprite")
+
 function love.resize(w, h)
     W = w
     H = h
@@ -16,17 +18,6 @@ function love.load()
     LaneHeight = H / GRID_HEIGHT
     TileWidth = W / GRID_WIDTH
 
-    -- Lane structure example:
-    -- {
-    --     type = 'safe' | 'road' | 'water',
-    --     speed = 0,
-    --     direction = 0,
-    --     obstacles = {
-    --         {x = 0, type = 'car'}
-    --     },
-    -- }
-
-
     Lanes = {
         {
             type = 'end',
@@ -34,20 +25,11 @@ function love.load()
             direction = 0,
             obstacles = {}
         },
+
         {
             type = 'road',
-            speed = 100,
-            direction = 1,
-            obstacles = {
-                { x = 0,   type = 'car' },
-                { x = 300, type = 'car' },
-                { x = 600, type = 'car' }
-            }
-        },
-        {
-            type = 'road',
-            speed = 200,
-            direction = 1,
+            speed = 80,
+            direction = -1,
             obstacles = {
                 { x = 0,   type = 'car' },
                 { x = 350, type = 'truck' },
@@ -65,12 +47,22 @@ function love.load()
         },
         {
             type = 'road',
-            speed = 100,
+            speed = 80,
             direction = 1,
             obstacles = {
                 { x = 0,   type = 'car' },
-                { x = 300, type = 'car' },
+                { x = 350, type = 'car' },
                 { x = 600, type = 'car' }
+            }
+        },
+        {
+            type = 'road',
+            speed = 200,
+            direction = 1,
+            obstacles = {
+                { x = 0,   type = 'car' },
+                { x = 450, type = 'truck' },
+                { x = 900, type = 'car' }
             }
         },
         {
@@ -136,6 +128,7 @@ function love.load()
     Frogger = {
         x = TileWidth * math.floor(GRID_WIDTH / 2),
         y = (GRID_HEIGHT - 1) * LaneHeight,
+        rotation = 0,
         gridY = 12,
         width = TileWidth,
         height = LaneHeight,
@@ -163,6 +156,8 @@ function love.load()
     }
 
     love.window.setTitle("Frogger")
+
+    GameSprites = Sprites.load()
 end
 
 function love.update(dt)
@@ -191,10 +186,24 @@ function love.draw()
 end
 
 function DrawFrogger()
-    love.graphics.setColor(0, 1, 0, 1)
-    love.graphics.rectangle('fill', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print("Frogger", Frogger.x + 5, Frogger.y + 5)
+    local quadToDraw = GameSprites.quads.frog
+    if (Frogger.isHopping) then
+        quadToDraw = GameSprites.quads.frogJump
+    else
+        quadToDraw = GameSprites.quads.frog
+    end
+
+    love.graphics.draw(
+        GameSprites.sheet, -- lo spritesheet
+        quadToDraw,        -- il quad della rana
+        Frogger.x + 32,    -- posizione x
+        Frogger.y + 32,    -- posizione y
+        Frogger.rotation,  -- rotazione (0 = nessuna)
+        4, 4,              -- scala x, y (1 = dimensione originale)
+        8, 8               -- origine x, y (per la rotazione)
+    )
+    love.graphics.rectangle('line', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
 end
 
 function DrawObstacles()
@@ -214,11 +223,39 @@ function DrawObstacles()
                 obstacle.x = W
             end
 
+            local direction = 0
+            if (lane.direction == 1) then
+                direction = -math.pi
+            end
+
             -- Draw obstacle
             if obstacle.type == 'car' then
-                love.graphics.setColor(1, 0, 0, 1)
+                local carQuad = GameSprites.quads.car
+                if (lane.speed > 120) then
+                    carQuad = GameSprites.quads.sportCar
+                end
+
+                love.graphics.draw(
+                    GameSprites.sheet,
+                    carQuad,
+                    obstacle.x + 32,
+                    laneY + 32,
+                    direction,
+                    4, 4,
+                    8, 8
+                )
             elseif obstacle.type == 'truck' then
-                love.graphics.setColor(0.5, 0.25, 0, 1)
+                local truckQuad = GameSprites.quads.truck
+
+                love.graphics.draw(
+                    GameSprites.sheet,
+                    truckQuad,
+                    obstacle.x + 32,
+                    laneY + 32,
+                    direction,
+                    4, 4,
+                    8, 8
+                )
             elseif obstacle.type == 'log' then
                 love.graphics.setColor(0.55, 0.27, 0.07, 1)
             elseif obstacle.type == 'turtle' then
@@ -229,7 +266,7 @@ function DrawObstacles()
                 love.graphics.setColor(1, 1, 1, 1)
             end
 
-            love.graphics.rectangle('fill', obstacle.x, laneY, TileWidth, LaneHeight)
+            love.graphics.rectangle('line', obstacle.x, laneY, TileWidth, LaneHeight)
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.print(obstacle.type, obstacle.x + 5, laneY + 5)
 
@@ -322,12 +359,13 @@ function love.keypressed(key)
 
     -- Calcola target in base al tasto
     if key == 'up' then
-        if Frogger.gridY > 1 then      
+        if Frogger.gridY > 1 then
             Frogger.targetX = Frogger.x
             Frogger.targetY = Frogger.y - LaneHeight
             Frogger.gridY = Frogger.gridY - 1
-            Frogger.isHopping = true 
+            Frogger.isHopping = true
             Frogger.hopProgress = 0
+            Frogger.rotation = 0
         end
     elseif key == 'down' then
         if Frogger.gridY < GRID_HEIGHT then
@@ -336,6 +374,7 @@ function love.keypressed(key)
             Frogger.gridY = Frogger.gridY + 1
             Frogger.isHopping = true
             Frogger.hopProgress = 0
+            Frogger.rotation = math.pi
         end
     elseif key == 'left' then
         if Frogger.x - TileWidth >= 0 then
@@ -343,6 +382,7 @@ function love.keypressed(key)
             Frogger.targetY = Frogger.y
             Frogger.isHopping = true
             Frogger.hopProgress = 0
+            Frogger.rotation = -math.pi / 2
         end
     elseif key == 'right' then
         if Frogger.x + TileWidth < W then
@@ -350,6 +390,7 @@ function love.keypressed(key)
             Frogger.targetY = Frogger.y
             Frogger.isHopping = true
             Frogger.hopProgress = 0
+            Frogger.rotation = math.pi / 2
         end
     end
 end
