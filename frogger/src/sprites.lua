@@ -44,7 +44,7 @@ function Sprites.load()
         spritesheet:getDimensions()
     )
 
-    -- TODO Quad all the sprites
+    -- TODO newQuad all the sprites
 
     return { sheet = spritesheet, quads = sprites }
 end

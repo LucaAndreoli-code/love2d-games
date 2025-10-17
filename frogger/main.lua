@@ -1,22 +1,20 @@
-local Sprites = require("resources.sprite.sprite")
-
-function love.resize(w, h)
-    W = w
-    H = h
-    LaneHeight = H / GRID_HEIGHT
-    TileWidth = W / GRID_WIDTH
-end
+local Sprites = require("src.sprites")
+local Constants = require("src.constants")
+local Frogger = require("src.frogger")
+local Lanes = require("src.lanes")
+local Obstacles = require("src.obstacles")
+local GameCanvas = require("src.canvas")
+local Screen = require("src.screen")
+local Debug = require("src.debug")
 
 function love.load()
-    -- Constants
-    GRID_WIDTH = 13    -- numero di colonne
-    GRID_HEIGHT = 12   -- numero di righe (corsie)
-    NUM_LILIPAD = 6    -- numero di ninfee nella corsia finale
-    HOP_DURATION = 0.5 -- durata del salto in secondi
+    --SCREEN AND CANVAS SETUP
+    Screen:initializeScreen()
+    GameCanvas:load()
 
-    W, H = love.graphics.getDimensions()
-    LaneHeight = H / GRID_HEIGHT
-    TileWidth = W / GRID_WIDTH
+    --GAME SETUP
+    GameSprites = Sprites.load()
+    Frogger:init(GameSprites)
 
     Lanes = {
         {
@@ -28,7 +26,7 @@ function love.load()
 
         {
             type = 'road',
-            speed = 80,
+            speed = 20,
             direction = -1,
             obstacles = {
                 { x = 0,   type = 'car' },
@@ -38,7 +36,7 @@ function love.load()
         },
         {
             type = 'road',
-            speed = 150,
+            speed = 40,
             direction = -1,
             obstacles = {
                 { x = 150, type = 'truck' },
@@ -47,7 +45,7 @@ function love.load()
         },
         {
             type = 'road',
-            speed = 80,
+            speed = 20,
             direction = 1,
             obstacles = {
                 { x = 0,   type = 'car' },
@@ -57,11 +55,10 @@ function love.load()
         },
         {
             type = 'road',
-            speed = 200,
+            speed = 80,
             direction = 1,
             obstacles = {
                 { x = 0,   type = 'car' },
-                { x = 450, type = 'truck' },
                 { x = 900, type = 'car' }
             }
         },
@@ -73,7 +70,7 @@ function love.load()
         },
         {
             type = 'water',
-            speed = 80,
+            speed = 20,
             direction = 1,
             obstacles = {
                 { x = 0,   type = 'log' },
@@ -83,7 +80,7 @@ function love.load()
         },
         {
             type = 'water',
-            speed = 120,
+            speed = 15,
             direction = -1,
             obstacles = {
                 { x = 200, type = 'turtle' },
@@ -92,7 +89,7 @@ function love.load()
         },
         {
             type = 'water',
-            speed = 80,
+            speed = 50,
             direction = 1,
             obstacles = {
                 { x = 0,   type = 'log' },
@@ -101,7 +98,7 @@ function love.load()
         },
         {
             type = 'water',
-            speed = 80,
+            speed = 40,
             direction = -1,
             obstacles = {
                 { x = 0,   type = 'log' },
@@ -110,7 +107,7 @@ function love.load()
         },
         {
             type = 'water',
-            speed = 120,
+            speed = 30,
             direction = -1,
             obstacles = {
                 { x = 200, type = 'turtle' },
@@ -125,45 +122,13 @@ function love.load()
         }
     }
 
-    Frogger = {
-        x = TileWidth * math.floor(GRID_WIDTH / 2),
-        y = (GRID_HEIGHT - 1) * LaneHeight,
-        rotation = 0,
-        gridY = 12,
-        width = TileWidth,
-        height = LaneHeight,
-
-        isOnPlatform = function(self, obstacle, laneY)
-            return self.x < obstacle.x + TileWidth and
-                self.x + self.width > obstacle.x and
-                self.y < laneY + LaneHeight and
-                self.y + self.height > laneY
-        end,
-        resetPosition = function(self)
-            self.x = TileWidth * math.floor(GRID_WIDTH / 2)
-            self.y = (GRID_HEIGHT - 1) * LaneHeight
-            self.gridY = 12
-            self.isHopping = false
-            self.hopProgress = 0
-        end,
-
-        isHopping = false,
-        hopProgress = 0,
-        startX = 0,
-        startY = 0,
-        targetX = 0,
-        targetY = 0,
-    }
-
     love.window.setTitle("Frogger")
-
-    GameSprites = Sprites.load()
 end
 
 function love.update(dt)
     if Frogger.isHopping then
         -- Aumenta il progresso del salto
-        Frogger.hopProgress = Frogger.hopProgress + (dt / HOP_DURATION)
+        Frogger.hopProgress = Frogger.hopProgress + (dt / Constants.HOP_DURATION)
 
         if Frogger.hopProgress >= 1.0 then
             -- Salto completato
@@ -180,30 +145,13 @@ function love.update(dt)
 end
 
 function love.draw()
+    GameCanvas:setCanvas()
+
     DrawLanes()
     DrawObstacles()
-    DrawFrogger()
-end
+    Frogger:draw()
 
-function DrawFrogger()
-    love.graphics.setColor(1, 1, 1, 1)
-    local quadToDraw = GameSprites.quads.frog
-    if (Frogger.isHopping) then
-        quadToDraw = GameSprites.quads.frogJump
-    else
-        quadToDraw = GameSprites.quads.frog
-    end
-
-    love.graphics.draw(
-        GameSprites.sheet, -- lo spritesheet
-        quadToDraw,        -- il quad della rana
-        Frogger.x + 32,    -- posizione x
-        Frogger.y + 32,    -- posizione y
-        Frogger.rotation,  -- rotazione (0 = nessuna)
-        4, 4,              -- scala x, y (1 = dimensione originale)
-        8, 8               -- origine x, y (per la rotazione)
-    )
-    love.graphics.rectangle('line', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
+    GameCanvas:setWindow()
 end
 
 function DrawObstacles()
@@ -217,10 +165,10 @@ function DrawObstacles()
             obstacle.x = obstacle.x + lane.speed * lane.direction * love.timer.getDelta()
 
             -- Wrap around logic
-            if lane.direction == 1 and obstacle.x > W then
+            if lane.direction == 1 and obstacle.x > Constants.GAME_WIDTH then
                 obstacle.x = -TileWidth
             elseif lane.direction == -1 and obstacle.x < -TileWidth then
-                obstacle.x = W
+                obstacle.x = Constants.GAME_WIDTH
             end
 
             local direction = 0
@@ -238,10 +186,10 @@ function DrawObstacles()
                 love.graphics.draw(
                     GameSprites.sheet,
                     carQuad,
-                    obstacle.x + 32,
-                    laneY + 32,
+                    obstacle.x + 8,
+                    laneY + 8,
                     direction,
-                    4, 4,
+                    1, 1,
                     8, 8
                 )
             elseif obstacle.type == 'truck' then
@@ -250,10 +198,10 @@ function DrawObstacles()
                 love.graphics.draw(
                     GameSprites.sheet,
                     truckQuad,
-                    obstacle.x + 32,
-                    laneY + 32,
+                    obstacle.x + 8,
+                    laneY + 8,
                     direction,
-                    4, 4,
+                    1, 1,
                     8, 8
                 )
             elseif obstacle.type == 'log' then
@@ -266,9 +214,13 @@ function DrawObstacles()
                 love.graphics.setColor(1, 1, 1, 1)
             end
 
-            love.graphics.rectangle('line', obstacle.x, laneY, TileWidth, LaneHeight)
+            if (Debug.enabled) then
+                love.graphics.rectangle('line', obstacle.x, laneY, TileWidth, LaneHeight)
+                love.graphics.print(obstacle.type, obstacle.x + 5, laneY + 5)
+            end
+
             love.graphics.setColor(1, 1, 1, 1)
-            love.graphics.print(obstacle.type, obstacle.x + 5, laneY + 5)
+
 
             -- Check if Frogger is on this obstacle
             if Frogger:isOnPlatform(obstacle, laneY) then
@@ -289,7 +241,10 @@ function DrawObstacles()
 
                         -- Keep within bounds
                         if Frogger.x < 0 then Frogger.x = 0 end
-                        if Frogger.x + Frogger.width > W then Frogger.x = W - Frogger.width end
+                        if Frogger.x + Frogger.width > Constants.GAME_WIDTH then
+                            Frogger.x = Constants.GAME_WIDTH -
+                                Frogger.width
+                        end
                     end
                 end
             end
@@ -311,8 +266,9 @@ function DrawLanes()
 
         -- Draw lane border
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.rectangle('line', 0, laneY, W, LaneHeight)
-        love.graphics.print(index .. ': ' .. lane.type, 10, laneY + 10)
+        if (Debug.enabled) then
+            love.graphics.rectangle('line', 0, laneY, Constants.GAME_WIDTH, LaneHeight)
+        end
 
         -- Draw lane tiles
         DrawLaneTiles(lane, index, laneY)
@@ -327,7 +283,7 @@ function DrawLaneTiles(lane, laneIndex, laneY)
     local gapSize = 0
     if useSpacing then
         local totalTilesWidth = numTiles * TileWidth
-        local remainingSpace = W - totalTilesWidth
+        local remainingSpace = Constants.GAME_WIDTH - totalTilesWidth
         gapSize = remainingSpace / (numTiles - 1)
     end
 
@@ -342,55 +298,14 @@ function DrawLaneTiles(lane, laneIndex, laneY)
             love.graphics.setColor(0, 1, 0, 0.3)
         end
         local x = (i - 1) * (TileWidth + gapSize)
-        love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(laneIndex .. ": " .. i - 1, x, laneY + 30)
+        if (Debug.enabled) then
+            love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
+            love.graphics.setColor(1, 1, 1, 1)
+        end
     end
 end
 
 function love.keypressed(key)
-    if Frogger.isHopping then
-        return
-    end
-
-    -- Salva posizione di partenza
-    Frogger.startX = Frogger.x
-    Frogger.startY = Frogger.y
-
-    -- Calcola target in base al tasto
-    if key == 'up' then
-        if Frogger.gridY > 1 then
-            Frogger.targetX = Frogger.x
-            Frogger.targetY = Frogger.y - LaneHeight
-            Frogger.gridY = Frogger.gridY - 1
-            Frogger.isHopping = true
-            Frogger.hopProgress = 0
-            Frogger.rotation = 0
-        end
-    elseif key == 'down' then
-        if Frogger.gridY < GRID_HEIGHT then
-            Frogger.targetX = Frogger.x
-            Frogger.targetY = Frogger.y + LaneHeight
-            Frogger.gridY = Frogger.gridY + 1
-            Frogger.isHopping = true
-            Frogger.hopProgress = 0
-            Frogger.rotation = math.pi
-        end
-    elseif key == 'left' then
-        if Frogger.x - TileWidth >= 0 then
-            Frogger.targetX = Frogger.x - TileWidth
-            Frogger.targetY = Frogger.y
-            Frogger.isHopping = true
-            Frogger.hopProgress = 0
-            Frogger.rotation = -math.pi / 2
-        end
-    elseif key == 'right' then
-        if Frogger.x + TileWidth < W then
-            Frogger.targetX = Frogger.x + TileWidth
-            Frogger.targetY = Frogger.y
-            Frogger.isHopping = true
-            Frogger.hopProgress = 0
-            Frogger.rotation = math.pi / 2
-        end
-    end
+    Frogger:move(key)
+    Debug:toggle(key)
 end
