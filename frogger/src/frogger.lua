@@ -1,4 +1,5 @@
 local Constants = require("src.constants")
+local Debug = require("src.debug")
 
 local Frogger = {
     -- Proprietà di default
@@ -40,7 +41,7 @@ function Frogger:init(gameSprites)
 end
 
 function Frogger:isOnPlatform(obstacle, laneY)
-    return self.x < obstacle.x + TileWidth and
+    return self.x < obstacle.x + obstacle.width and
         self.x + self.width > obstacle.x and
         self.y < laneY + LaneHeight and
         self.y + self.height > laneY
@@ -72,7 +73,9 @@ function Frogger:draw()
         1, 1,              -- scala x, y (1 = dimensione originale)
         8, 8               -- origine x, y (per la rotazione)
     )
-    love.graphics.rectangle('line', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
+    if Debug.enabled then
+        love.graphics.rectangle('line', Frogger.x, Frogger.y, Frogger.width, Frogger.height)
+    end
 end
 
 function Frogger:handleHopping(dt)

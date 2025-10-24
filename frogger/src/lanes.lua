@@ -2,6 +2,8 @@ local Constants = require("src.constants")
 local Frogger = require("src.frogger")
 local Debug = require("src.debug")
 
+local TileWidth = Constants.GAME_WIDTH / Constants.GRID_WIDTH
+
 local Lanes = {
     {
         type = 'end',
@@ -15,9 +17,9 @@ local Lanes = {
         speed = 20,
         direction = -1,
         obstacles = {
-            { x = 0,  type = 'car' },
-            { x = 45, type = 'truck' },
-            { x = 90, type = 'car' }
+            { x = 0,  type = 'car',   width = TileWidth },
+            { x = 45, type = 'truck', width = TileWidth * 2 },
+            { x = 90, type = 'car',   width = TileWidth }
         }
     },
     {
@@ -25,8 +27,8 @@ local Lanes = {
         speed = 40,
         direction = -1,
         obstacles = {
-            { x = 25, type = 'truck' },
-            { x = 80, type = 'car' },
+            { x = 25, type = 'truck', width = TileWidth * 2 },
+            { x = 80, type = 'car',   width = TileWidth },
         }
     },
     {
@@ -34,9 +36,9 @@ local Lanes = {
         speed = 20,
         direction = 1,
         obstacles = {
-            { x = 0,   type = 'car' },
-            { x = 75,  type = 'car' },
-            { x = 125, type = 'car' }
+            { x = 0,   type = 'car', width = TileWidth },
+            { x = 75,  type = 'car', width = TileWidth },
+            { x = 125, type = 'car', width = TileWidth }
         }
     },
     {
@@ -44,8 +46,8 @@ local Lanes = {
         speed = 80,
         direction = 1,
         obstacles = {
-            { x = 0,  type = 'car' },
-            { x = 75, type = 'car' }
+            { x = 0,  type = 'car', width = TileWidth },
+            { x = 75, type = 'car', width = TileWidth }
         }
     },
     {
@@ -59,9 +61,9 @@ local Lanes = {
         speed = 20,
         direction = 1,
         obstacles = {
-            { x = 0,   type = 'log' },
-            { x = 100, type = 'crocodile' },
-            { x = 50,  type = 'log' },
+            { x = 0,   type = 'log',       width = TileWidth * 2 },
+            { x = 100, type = 'crocodile', width = TileWidth * 3 },
+            { x = 50,  type = 'log',       width = TileWidth * 3 },
         }
     },
     {
@@ -69,8 +71,8 @@ local Lanes = {
         speed = 15,
         direction = -1,
         obstacles = {
-            { x = 0,   type = 'turtle' },
-            { x = 100, type = 'turtle' },
+            { x = 0,   type = 'turtle', width = TileWidth },
+            { x = 100, type = 'turtle', width = TileWidth },
         }
     },
     {
@@ -78,8 +80,8 @@ local Lanes = {
         speed = 35,
         direction = 1,
         obstacles = {
-            { x = 0,   type = 'log' },
-            { x = 125, type = 'log' }
+            { x = 0,   type = 'log', width = TileWidth * 2 },
+            { x = 125, type = 'log', width = TileWidth * 3 }
         }
     },
     {
@@ -87,8 +89,8 @@ local Lanes = {
         speed = 40,
         direction = -1,
         obstacles = {
-            { x = 0,   type = 'log' },
-            { x = 125, type = 'log' }
+            { x = 0,   type = 'log', width = TileWidth * 2 },
+            { x = 125, type = 'log', width = TileWidth * 2 }
         }
     },
     {
@@ -96,9 +98,9 @@ local Lanes = {
         speed = 30,
         direction = -1,
         obstacles = {
-            { x = 0,   type = 'turtle' },
-            { x = 125, type = 'log' },
-            { x = 200, type = 'turtle' }
+            { x = 0,   type = 'turtle', width = TileWidth },
+            { x = 125, type = 'log',    width = TileWidth * 2 },
+            { x = 200, type = 'turtle', width = TileWidth }
         }
     },
     {
@@ -120,7 +122,7 @@ function Lanes:draw()
         local laneY = (index - 1) * LaneHeight
 
         -- Draw lane border
-        love.graphics.setColor(1, 1, 1, 1)
+        --love.graphics.setColor(1, 1, 1, 1)
         if (Debug.enabled) then
             love.graphics.rectangle('line', 0, laneY, Constants.GAME_WIDTH, LaneHeight)
         end
@@ -141,17 +143,14 @@ function Lanes:draw()
         for i = 1, numTiles do
             -- Set color based on lane type
             if (lane.type == 'road') then
-                love.graphics.setColor(1, 0, 0, 0.3)
+                love.graphics.setColor(1, 0, 0, 0.5)
             elseif (lane.type == 'water') then
-                love.graphics.setColor(0, 0, 1, 0.3)
+                love.graphics.setColor(0, 0, 1, 0.5)
             else
-                love.graphics.setColor(0, 1, 0, 0.3)
+                love.graphics.setColor(0, 1, 0, 0.5)
             end
             local x = (i - 1) * (TileWidth + gapSize)
-            if (Debug.enabled) then
-                love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
-                love.graphics.setColor(1, 1, 1, 1)
-            end
+            love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
         end
     end
 end
@@ -178,12 +177,15 @@ function Lanes:drawObstacles()
                 direction = -math.pi
             end
 
+            love.graphics.setColor(1, 1, 1, 1)
+
             -- Draw obstacle
             if obstacle.type == 'car' then
                 local carQuad = GameSprites.quads.car
                 if (lane.speed > 120) then
                     carQuad = GameSprites.quads.sportCar
                 end
+
 
                 love.graphics.draw(
                     GameSprites.sheet,
@@ -207,55 +209,123 @@ function Lanes:drawObstacles()
                     8, 8
                 )
             elseif obstacle.type == 'log' then
-                local logQuad = GameSprites.quads.right_log
+                local rightLog = GameSprites.quads.right_log
+                local leftLog = GameSprites.quads.left_log
+                local centerLog = GameSprites.quads.center_log
+
+                if obstacle.width == TileWidth * 3 then
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        leftLog,
+                        obstacle.x + 8,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        centerLog,
+                        obstacle.x + 8 + TileWidth,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        rightLog,
+                        obstacle.x + 8 + TileWidth * 2,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                elseif obstacle.width == TileWidth * 2 then
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        leftLog,
+                        obstacle.x + 8,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        rightLog,
+                        obstacle.x + 8 + TileWidth,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                elseif obstacle.width == TileWidth then
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        centerLog,
+                        obstacle.x + 8,
+                        laneY + 8,
+                        0, --no need for direction
+                        1, 1,
+                        8, 8
+                    )
+                end
+            elseif obstacle.type == 'turtle' then
+                local turtleQuad = GameSprites.quads.turtle
 
                 love.graphics.draw(
                     GameSprites.sheet,
-                    logQuad,
+                    turtleQuad,
                     obstacle.x + 8,
                     laneY + 8,
                     0, --no need for direction
                     1, 1,
                     8, 8
                 )
-            elseif obstacle.type == 'turtle' then
-                love.graphics.setColor(0, 1, 0, 1)
             elseif obstacle.type == 'crocodile' then
-                love.graphics.setColor(0, 0.5, 0, 1)
-            else
-                love.graphics.setColor(1, 1, 1, 1)
+                local crocodileQuad = GameSprites.quads.crocodile
+
+                love.graphics.draw(
+                    GameSprites.sheet,
+                    crocodileQuad,
+                    obstacle.x + 8,
+                    laneY + 8,
+                    0, --no need for direction
+                    1, 1,
+                    8, 8
+                )
             end
 
             if (Debug.enabled) then
-                love.graphics.rectangle('line', obstacle.x, laneY, TileWidth, LaneHeight)
+                love.graphics.rectangle('line', obstacle.x, laneY, obstacle.width, LaneHeight)
                 love.graphics.print(obstacle.type, obstacle.x + 5, laneY + 5)
             end
 
-            love.graphics.setColor(1, 1, 1, 1)
-
-
             -- Check if Frogger is on this obstacle
-            if Frogger:isOnPlatform(obstacle, laneY) then
-                if lane.type == 'road' then
-                    -- Hit by vehicle
-                    if obstacle.type == 'car' or obstacle.type == 'truck' then
-                        print("Game Over! Hit by vehicle")
-                        Frogger:resetPosition()
-                    end
-                elseif lane.type == 'water' then
-                    isOnAnyPlatform = true
+            if not Frogger.isHopping then
+                if Frogger:isOnPlatform(obstacle, laneY) then
+                    if lane.type == 'road' then
+                        -- Hit by vehicle
+                        if obstacle.type == 'car' or obstacle.type == 'truck' then
+                            print("Game Over! Hit by vehicle")
+                            Frogger:resetPosition()
+                        end
+                    elseif lane.type == 'water' then
+                        isOnAnyPlatform = true
 
-                    if obstacle.type == 'crocodile' then
-                        print("Game Over! Eaten by crocodile")
-                        Frogger:resetPosition()
-                    else
-                        Frogger.x = Frogger.x + lane.speed * lane.direction * love.timer.getDelta()
+                        if obstacle.type == 'crocodile' then
+                            print("Game Over! Eaten by crocodile")
+                            Frogger:resetPosition()
+                        else
+                            Frogger.x = Frogger.x + lane.speed * lane.direction * love.timer.getDelta()
 
-                        -- Keep within bounds
-                        if Frogger.x < 0 then Frogger.x = 0 end
-                        if Frogger.x + Frogger.width > Constants.GAME_WIDTH then
-                            Frogger.x = Constants.GAME_WIDTH -
-                                Frogger.width
+                            -- Keep within bounds
+                            if Frogger.x < 0 then Frogger.x = 0 end
+                            if Frogger.x + Frogger.width > Constants.GAME_WIDTH then
+                                Frogger.x = Constants.GAME_WIDTH -
+                                    Frogger.width
+                            end
                         end
                     end
                 end
@@ -264,7 +334,7 @@ function Lanes:drawObstacles()
 
 
         -- check alla fine di tutti gli altri per lane e non per ogni ostacolo altrimenti si resetta più volte e sbarella
-        if lane.type == 'water' and index == Frogger.gridY and not isOnAnyPlatform then
+        if lane.type == 'water' and index == Frogger.gridY and not isOnAnyPlatform and not Frogger.isHopping then
             print("Game Over! Drowned at lane " .. index)
             Frogger:resetPosition()
         end

@@ -1,8 +1,22 @@
 local Sprites = {}
 
 function Sprites.load()
-    local spritesheet = love.graphics.newImage("resources/sprite/frogger.png")
-    spritesheet:setFilter("nearest", "nearest")
+    local imageData = love.image.newImageData("resources/sprite/frogger.png")
+    local width = imageData:getWidth()
+    local height = imageData:getHeight()
+
+    for y = 0, height - 1 do
+        for x = 0, width - 1 do
+            local r, g, b, a = imageData:getPixel(x, y)
+
+            if r == 0 and g == 0 and b == 0 then
+                imageData:setPixel(x, y, r, g, b, 0)
+            end
+        end
+    end
+
+    local spritesheet = love.graphics.newImage(imageData)
+    spritesheet:setFilter("nearest", "nearest") -- mantieni pixel sharp
 
     local px16 = 16
 
@@ -62,6 +76,24 @@ function Sprites.load()
     sprites.right_log = love.graphics.newQuad(
         logPosX + (px16 * 2 + 2 + 2), logPosY,
         px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    local turtlePosX = 1
+    local turtlePosY = 152
+
+    sprites.turtle = love.graphics.newQuad(
+        turtlePosX + (px16 + 2), turtlePosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    local crocodilePosX = 41
+    local crocodilePosY = 134
+
+    sprites.crocodile = love.graphics.newQuad(
+        (crocodilePosX + px16 * 4), crocodilePosY,
+        px16 * 3, px16,
         spritesheet:getDimensions()
     )
 

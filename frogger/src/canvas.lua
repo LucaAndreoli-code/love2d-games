@@ -2,6 +2,7 @@ local Constants = require("src.constants")
 
 local GameCanvas = {}
 local canvas = nil
+local canvasSpacing = 25
 
 function GameCanvas:load()
     -- Crea il canvas virtuale
@@ -26,8 +27,8 @@ function GameCanvas:setWindow()
 
     -- Calcola lo scaling per adattare il canvas alla finestra
     local windowW, windowH = love.graphics.getDimensions()
-    local scaleX = windowW / Constants.GAME_WIDTH
-    local scaleY = windowH / Constants.GAME_HEIGHT
+    local scaleX = windowW / (Constants.GAME_WIDTH + canvasSpacing)
+    local scaleY = windowH / (Constants.GAME_HEIGHT + canvasSpacing)
     local scale = math.min(scaleX, scaleY) -- mantieni aspect ratio
 
     -- Centra il canvas scalato
