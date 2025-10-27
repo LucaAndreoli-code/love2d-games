@@ -55,6 +55,10 @@ function Frogger:resetPosition()
     self.hopProgress = 0
 end
 
+function Frogger:reachedEnd()
+    return Frogger.gridY == 1
+end
+
 function Frogger:draw()
     love.graphics.setColor(1, 1, 1, 1)
     local quadToDraw = GameSprites.quads.frog

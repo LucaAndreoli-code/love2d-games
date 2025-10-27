@@ -97,9 +97,138 @@ function Sprites.load()
         spritesheet:getDimensions()
     )
 
+    local frogOnLilyPadPosX = 45
+    local frogOnLilyPadPosY = 196
+
+    sprites.frog_on_lilypad = love.graphics.newQuad(
+        frogOnLilyPadPosX, frogOnLilyPadPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
     -- TODO newQuad all the sprites
 
     return { sheet = spritesheet, quads = sprites }
+end
+
+function Sprites:drawObstacles(obstacle, ObstacleWidth, lane, laneY, direction)
+    -- Draw obstacle
+    if obstacle.type == 'car' then
+        local carQuad = GameSprites.quads.car
+        if (lane.speed > 120) then
+            carQuad = GameSprites.quads.sportCar
+        end
+
+
+        love.graphics.draw(
+            GameSprites.sheet,
+            carQuad,
+            obstacle.x + 8,
+            laneY + 8,
+            direction,
+            1, 1,
+            8, 8
+        )
+    elseif obstacle.type == 'truck' then
+        local truckQuad = GameSprites.quads.truck
+
+        love.graphics.draw(
+            GameSprites.sheet,
+            truckQuad,
+            obstacle.x + 8,
+            laneY + 8,
+            direction,
+            1, 1,
+            8, 8
+        )
+    elseif obstacle.type == 'log' then
+        local rightLog = GameSprites.quads.right_log
+        local leftLog = GameSprites.quads.left_log
+        local centerLog = GameSprites.quads.center_log
+
+        if obstacle.width == ObstacleWidth * 3 then
+            love.graphics.draw(
+                GameSprites.sheet,
+                leftLog,
+                obstacle.x + 8,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+            love.graphics.draw(
+                GameSprites.sheet,
+                centerLog,
+                obstacle.x + 8 + ObstacleWidth,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+            love.graphics.draw(
+                GameSprites.sheet,
+                rightLog,
+                obstacle.x + 8 + ObstacleWidth * 2,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+        elseif obstacle.width == ObstacleWidth * 2 then
+            love.graphics.draw(
+                GameSprites.sheet,
+                leftLog,
+                obstacle.x + 8,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+            love.graphics.draw(
+                GameSprites.sheet,
+                rightLog,
+                obstacle.x + 8 + ObstacleWidth,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+        elseif obstacle.width == ObstacleWidth then
+            love.graphics.draw(
+                GameSprites.sxheet,
+                centerLog,
+                obstacle.x + 8,
+                laneY + 8,
+                0, --no need for direction
+                1, 1,
+                8, 8
+            )
+        end
+    elseif obstacle.type == 'turtle' then
+        local turtleQuad = GameSprites.quads.turtle
+
+        love.graphics.draw(
+            GameSprites.sheet,
+            turtleQuad,
+            obstacle.x + 8,
+            laneY + 8,
+            0, --no need for direction
+            1, 1,
+            8, 8
+        )
+    elseif obstacle.type == 'crocodile' then
+        local crocodileQuad = GameSprites.quads.crocodile
+
+        love.graphics.draw(
+            GameSprites.sheet,
+            crocodileQuad,
+            obstacle.x + 8,
+            laneY + 8,
+            0, --no need for direction
+            1, 1,
+            8, 8
+        )
+    end
 end
 
 return Sprites

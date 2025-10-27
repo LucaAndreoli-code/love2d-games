@@ -5,6 +5,7 @@ local Lanes = require("src.lanes")
 local GameCanvas = require("src.canvas")
 local Screen = require("src.screen")
 local Debug = require("src.debug")
+local Points = require("src.points")
 
 function love.load()
     --SCREEN AND CANVAS SETUP
@@ -29,6 +30,7 @@ function love.draw()
     Lanes:draw()
     Lanes:drawObstacles()
     Frogger:draw()
+    Points:draw()
 
     GameCanvas:setWindow()
 end
