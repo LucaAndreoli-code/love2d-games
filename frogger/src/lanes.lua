@@ -94,8 +94,10 @@ local Lanes = {
         speed = 40,
         direction = -1,
         obstacles = {
-            { x = 0,   type = 'log', width = ObstacleWidth * 2 },
-            { x = 125, type = 'log', width = ObstacleWidth * 2 }
+            { x = 0,                       type = 'log', width = ObstacleWidth * 2 },
+            { x = 125,                     type = 'log', width = ObstacleWidth * 2 },
+            { x = 125 + ObstacleWidth * 2, type = 'log', width = ObstacleWidth * 2 },
+            { x = 125 + ObstacleWidth * 4, type = 'log', width = ObstacleWidth * 2 }
         }
     },
     {
@@ -104,8 +106,8 @@ local Lanes = {
         direction = -1,
         obstacles = {
             { x = 0,   type = 'turtle', width = ObstacleWidth },
-            { x = 125, type = 'log',    width = ObstacleWidth * 2 },
-            { x = 200, type = 'turtle', width = ObstacleWidth }
+            { x = 60,  type = 'log',    width = ObstacleWidth * 2 },
+            { x = 120, type = 'turtle', width = ObstacleWidth }
         }
     },
     {
@@ -116,9 +118,19 @@ local Lanes = {
     }
 }
 
---can be randomized later
-function Lanes:init()
-    --RANDOMIZE LANES LATER
+function Lanes:clearLilypads()
+    for i, lilypad in ipairs(Lanes[1].obstacles) do
+        lilypad.occupied = false
+    end
+end
+
+function Lanes:verifyWinCondition()
+    for i, lilypad in ipairs(Lanes[1].obstacles) do
+        if not lilypad.occupied then
+            return
+        end
+    end
+    Points.gameState = 'win'
 end
 
 function Lanes:draw()
@@ -145,22 +157,9 @@ function Lanes:draw()
 
         -- Draw tiles
         for i = 1, numTiles do
-            -- Set color based on lane type
-            if (lane.type == 'road') then
-                love.graphics.setColor(1, 0, 0, 0.5)
-            elseif (lane.type == 'water') then
-                love.graphics.setColor(0, 0, 1, 0.5)
-            else
-                love.graphics.setColor(0, 1, 0, 0.5)
-            end
             local x = (i - 1) * (TileWidth + gapSize)
 
             if (lane.type == 'end') then
-                -- SALVARE POSIZIONE LILIPADS IN UNA TABELLA PER VERIFICARE VITTORIA
-                -- VERIFICARE SE RANA COLPISCE NINFEA E AGGIUNGERE PUNTI
-                -- DISEGNARE NINFEA
-                -- SALVARE STATO DELLA PARTITA (NINFEA OCCUPATA O LIBERA)
-                -- Add lilypad obstacle and save its position
                 if not lane.obstacles[i] then
                     lane.obstacles[i] = {
                         x = x,
@@ -182,10 +181,18 @@ function Lanes:draw()
                         1, 1,
                         8, 8
                     )
+                else
+                    love.graphics.draw(
+                        GameSprites.sheet,
+                        GameSprites.quads.lilypad,
+                        x + 8,
+                        laneY + 8,
+                        0,
+                        1, 1,
+                        8, 8
+                    )
                 end
             end
-
-            love.graphics.rectangle('fill', x, laneY, TileWidth, LaneHeight)
         end
     end
 end
@@ -195,6 +202,8 @@ function Lanes:drawObstacles()
         local lane = Lanes[index]
         local laneY = (index - 1) * LaneHeight
         isOnAnyPlatform = false
+
+        Sprites:drawLanesBackground(lane, laneY)
 
         for _, obstacle in ipairs(lane.obstacles) do
             -- Update obstacle position
@@ -212,8 +221,6 @@ function Lanes:drawObstacles()
                 direction = -math.pi
             end
 
-            love.graphics.setColor(1, 1, 1, 1)
-
             Sprites:drawObstacles(obstacle, ObstacleWidth, lane, laneY, direction)
 
             local obstacleXOffset = obstacle.x + 2 -- Adjust for better hitbox
@@ -222,8 +229,10 @@ function Lanes:drawObstacles()
                 love.graphics.print(obstacle.type, obstacleXOffset + 5, laneY + 5)
             end
 
+
             CheckFroggerOnLane(obstacle, lane, laneY)
         end
+
 
         CheckFroggerNotOnPlatform(lane, index)
     end
@@ -231,6 +240,9 @@ end
 
 -- Verify if Frogger is on an obstacle in the lanes
 function CheckFroggerOnLane(obstacle, lane, laneY)
+    if Frogger.isDead then
+        return
+    end
     if not Frogger.isHopping then
         local tempObstacle = obstacle
         tempObstacle.x = obstacle.x
@@ -238,21 +250,21 @@ function CheckFroggerOnLane(obstacle, lane, laneY)
             if lane.type == 'road' then -- Hit by obstacle
                 -- Hit by vehicle
                 if obstacle.type == 'car' or obstacle.type == 'truck' then
-                    print("Game Over! Hit by vehicle")
+                    print("Hit by " .. obstacle.type .. " at lane " .. Frogger.gridY)
                     if (Debug.enabled) then
                         return
                     end
-                    Frogger:resetPosition()
+                    Frogger:die()
                 end
             elseif lane.type == 'water' then -- Moving on platform
                 isOnAnyPlatform = true
 
                 if obstacle.type == 'crocodile' then
-                    print("Game Over! Eaten by crocodile")
+                    print("Eaten by crocodile at lane " .. Frogger.gridY)
                     if (Debug.enabled) then
                         return
                     end
-                    Frogger:resetPosition()
+                    Frogger:die()
                 else
                     Frogger.x = Frogger.x + lane.speed * lane.direction * love.timer.getDelta()
 
@@ -270,13 +282,15 @@ end
 
 -- Verify if Frogger is not on any platform in water lanes
 function CheckFroggerNotOnPlatform(lane, index)
+    if Frogger.isDead then
+        return
+    end
     if lane.type == 'water' and index == Frogger.gridY and not isOnAnyPlatform and not Frogger.isHopping then
-        print("Game Over! Drowned at lane " .. index)
-        Points:loseLife()
+        print("Drowned at lane " .. Frogger.gridY)
         if (Debug.enabled) then
             return
         end
-        Frogger:resetPosition()
+        Frogger:die()
     end
 
     if Frogger:reachedEnd() and not Frogger.isHopping then
@@ -285,6 +299,22 @@ function CheckFroggerNotOnPlatform(lane, index)
                 print("You reached a lilypad!")
                 Points:add(100)
                 lilypad.occupied = true
+                Frogger:resetPosition()
+                return
+            elseif Frogger:isOnPlatform(lilypad, 1) and lilypad.occupied then
+                print("Lilypad already occupied!")
+                Points:loseLife()
+                if (Debug.enabled) then
+                    return
+                end
+                Frogger:resetPosition()
+                return
+            elseif not Frogger:isOnPlatform(lilypad, 1) and i == #Lanes[1].obstacles then
+                print("Missed all lilipads")
+                Points:loseLife()
+                if (Debug.enabled) then
+                    return
+                end
                 Frogger:resetPosition()
                 return
             end

@@ -10,6 +10,7 @@ local Frogger = {
     width = 16,
     height = 16,
     isHopping = false,
+    isDead = false,
     hopProgress = 0,
     startX = 0,
     startY = 0,
@@ -52,6 +53,7 @@ function Frogger:resetPosition()
     self.y = (Constants.GRID_HEIGHT - 1) * LaneHeight
     self.gridY = 12
     self.isHopping = false
+    self.isDead = false
     self.hopProgress = 0
 end
 
@@ -59,13 +61,44 @@ function Frogger:reachedEnd()
     return Frogger.gridY == 1
 end
 
+function Frogger:die()
+    self.isDead = true
+    self.deathTimer = 1
+    Points:loseLife()
+end
+
 function Frogger:draw()
-    love.graphics.setColor(1, 1, 1, 1)
     local quadToDraw = GameSprites.quads.frog
     if (self.isHopping) then
         quadToDraw = GameSprites.quads.frogJump
     else
         quadToDraw = GameSprites.quads.frog
+    end
+
+    if (self.isDead) then
+        local deathPosX = self.x
+        local deathPosY = self.y
+
+        love.graphics.draw(
+            GameSprites.sheet,       -- lo spritesheet
+            GameSprites.quads.death, -- il quad della rana
+            deathPosX + 8,           -- posizione x
+            deathPosY + 8,           -- posizione y
+            0,                       -- rotazione (0 = nessuna)
+            1, 1,                    -- scala x, y (1 = dimensione originale)
+            8, 8                     -- origine x, y (per la rotazione)
+        )
+
+        -- Gestisci il timer di morte e resetta la posizione dopo 0.5 secondi
+        if self.deathTimer then
+            self.deathTimer = self.deathTimer - love.timer.getDelta()
+            if self.deathTimer <= 0 then
+                self.isDead = false
+                self.deathTimer = nil
+                self:resetPosition()
+            end
+        end
+        return
     end
 
     love.graphics.draw(
@@ -83,6 +116,9 @@ function Frogger:draw()
 end
 
 function Frogger:handleHopping(dt)
+    if self.isDead then
+        return
+    end
     if Frogger.isHopping then
         -- Aumenta il progresso del salto
         Frogger.hopProgress = Frogger.hopProgress + (dt / Constants.HOP_DURATION)
@@ -102,6 +138,9 @@ function Frogger:handleHopping(dt)
 end
 
 function Frogger:move(key)
+    if self.isDead then
+        return
+    end
     if self.isHopping then
         return
     end

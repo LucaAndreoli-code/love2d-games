@@ -1,3 +1,5 @@
+Constants = require("src.constants")
+
 local Sprites = {}
 
 function Sprites.load()
@@ -88,6 +90,15 @@ function Sprites.load()
         spritesheet:getDimensions()
     )
 
+    local lilypadPosX = 55
+    local lilypadPosY = 152
+
+    sprites.lilypad = love.graphics.newQuad(
+        lilypadPosX, lilypadPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
     local crocodilePosX = 41
     local crocodilePosY = 134
 
@@ -106,9 +117,70 @@ function Sprites.load()
         spritesheet:getDimensions()
     )
 
-    -- TODO newQuad all the sprites
+    local waterPosX = 1
+    local waterPosY = 390
+
+    sprites.water = love.graphics.newQuad(
+        waterPosX, waterPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    local roadPosX = 90
+    local roadPosY = 378
+
+    -- Create a full black quad for the road
+    sprites.road = love.graphics.newQuad(
+        roadPosX, roadPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    local safePosX = 135
+    local safePosY = 197
+
+    sprites.safe = love.graphics.newQuad(
+        safePosX, safePosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
+
+    local deathPosX = 109
+    local deathPosY = 80
+
+    sprites.death = love.graphics.newQuad(
+        deathPosX, deathPosY,
+        px16, px16,
+        spritesheet:getDimensions()
+    )
 
     return { sheet = spritesheet, quads = sprites }
+end
+
+function Sprites:drawLanesBackground(lane, laneY)
+    -- Draw lane background
+    local quadToDraw = nil
+    if lane.type == 'water' then
+        quadToDraw = GameSprites.quads.water
+    elseif lane.type == 'road' then
+        quadToDraw = GameSprites.quads.road
+    elseif lane.type == 'safe' then
+        quadToDraw = GameSprites.quads.safe
+    else
+        return -- no background to draw for 'safe' lanes
+    end
+
+    for i = 0, Constants.GRID_WIDTH - 1 do
+        love.graphics.draw(
+            GameSprites.sheet,
+            quadToDraw,
+            i * (Constants.GAME_WIDTH / Constants.GRID_WIDTH) + 8,
+            laneY + 8,
+            0,
+            1, 1,
+            8, 8
+        )
+    end
 end
 
 function Sprites:drawObstacles(obstacle, ObstacleWidth, lane, laneY, direction)

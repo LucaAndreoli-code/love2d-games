@@ -1,8 +1,10 @@
 local GameCanvas = require("src.canvas")
+local Frogger = require("src.frogger")
+
 local Points = {
     points = 0,
     lives = 3,
-    gameOver = false
+    gameState = 'home'
 }
 
 function Points:draw()
@@ -19,9 +21,9 @@ end
 function Points:loseLife()
     Points.lives = Points.lives - 1
     if Points.lives <= 0 then
-        print("Game Over! No lives left.")
+        Points.gameState = 'gameover'
         Points:reset()
-        -- Here you can add game over logic, like resetting the game or showing a game over screen
+        Frogger:resetPosition()
     else
 
     end
@@ -31,6 +33,8 @@ function Points:reset()
     Points.points = 0
     Points.lives = 3
     Points.gameOver = false
+    Lanes = require("src.lanes")
+    Lanes:clearLilypads()
 end
 
 return Points
