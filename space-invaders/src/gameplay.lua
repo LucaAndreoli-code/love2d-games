@@ -1,4 +1,5 @@
 local gameplay = {}
+local hud = require("src.hud")
 
 local screenWidth, screenHeight
 local MARGIN = 50
@@ -60,6 +61,8 @@ end
 function gameplay.load(data)
     screenWidth = love.graphics.getWidth()
     screenHeight = love.graphics.getHeight()
+
+    hud.load()
 
     shipData = data
 
@@ -145,9 +148,6 @@ function gameplay.update(dt)
 end
 
 function gameplay.draw()
-    love.graphics.setColor(0.3, 0.3, 0.3)
-    love.graphics.rectangle("line", MARGIN, MARGIN, screenWidth - MARGIN * 2, screenHeight - MARGIN * 2)
-
     love.graphics.setColor(0, 1, 0)
     for _, bullet in ipairs(bullets) do
         love.graphics.rectangle("fill", bullet.x, bullet.y, BULLET_WIDTH, BULLET_HEIGHT)
@@ -157,10 +157,13 @@ function gameplay.draw()
     if player.shipCanvas then
         love.graphics.draw(player.shipCanvas, player.x, player.y)
     end
+
+    hud.draw()
 end
 
 function gameplay.resize(w, h)
     screenWidth, screenHeight = w, h
+    hud.resize(w, h)
 end
 
 function gameplay.getPlayer()

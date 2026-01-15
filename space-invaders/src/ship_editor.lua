@@ -185,15 +185,15 @@ setupDrawButtons = function()
         end
     }))
 
-    local paletteStartX = gridOffsetX
-    local paletteY = gridOffsetY + cellSize * GRID_SIZE + 20
+    local btnSize = 40
+    local paletteX = gridOffsetX - btnSize - 30
+    local paletteStartY = gridOffsetY
 
     for i, color in ipairs(colors) do
-        local btnSize = 40
-        local btnX = paletteStartX + (i - 1) * (btnSize + 10)
+        local btnY = paletteStartY + (i - 1) * (btnSize + 10)
         table.insert(colorButtons, {
-            x = btnX,
-            y = paletteY,
+            x = paletteX,
+            y = btnY,
             width = btnSize,
             height = btnSize,
             colorIndex = i,
