@@ -1,7 +1,5 @@
 local hud = {}
-
-local GAME_WIDTH = 800
-local GAME_HEIGHT = 600
+local scaling = require("src.scaling")
 
 -- HUD data
 local data = {
@@ -25,11 +23,11 @@ local function drawTextWithShadow(text, x, y, font, color, align)
 
     -- Shadow
     love.graphics.setColor(0, 0, 0, 0.7)
-    love.graphics.printf(text, x + 2, y + 2, GAME_WIDTH, align)
+    love.graphics.printf(text, x + 2, y + 2, scaling.GAME_WIDTH, align)
 
     -- Main text
     love.graphics.setColor(color[1], color[2], color[3])
-    love.graphics.printf(text, x, y, GAME_WIDTH, align)
+    love.graphics.printf(text, x, y, scaling.GAME_WIDTH, align)
 end
 
 function hud.load()
@@ -45,7 +43,7 @@ function hud.draw()
     -- ALTO SINISTRA - Vita
     local healthY = padding
     love.graphics.setFont(fonts.small)
-    drawTextWithShadow("HP:", padding, healthY, fonts.small, {1, 1, 1})
+    drawTextWithShadow("HP:", padding, healthY, fonts.small, { 1, 1, 1 })
 
     -- Barra vita
     local healthBarX = padding + fonts.small:getWidth("HP: ")
@@ -79,25 +77,25 @@ function hud.draw()
     love.graphics.setFont(fonts.small)
     local healthText = data.health .. "/" .. data.maxHealth
     local healthTextX = healthBarX + (healthBarWidth - fonts.small:getWidth(healthText)) / 2
-    drawTextWithShadow(healthText, healthTextX, healthY + 2, fonts.small, {1, 1, 1})
+    drawTextWithShadow(healthText, healthTextX, healthY + 2, fonts.small, { 1, 1, 1 })
 
     -- ALTO CENTRO - Punti
     local scoreText = "SCORE: " .. data.score
-    drawTextWithShadow(scoreText, 0, padding, fonts.large, {1, 1, 1}, "center")
+    drawTextWithShadow(scoreText, 0, padding, fonts.large, { 1, 1, 1 }, "center")
 
     -- ALTO DESTRA - Coins
     local coinsText = "COINS: " .. data.coins
     local coinsTextWidth = fonts.medium:getWidth(coinsText)
-    local coinsX = GAME_WIDTH - coinsTextWidth - padding
-    drawTextWithShadow(coinsText, coinsX, padding + 5, fonts.medium, {1, 0.85, 0})
+    local coinsX = scaling.GAME_WIDTH - coinsTextWidth - padding
+    drawTextWithShadow(coinsText, coinsX, padding + 5, fonts.medium, { 1, 0.85, 0 })
 
     -- BASSO CENTRO - Potenziamenti (placeholder slots)
-    local powerupY = GAME_HEIGHT - padding - 40
+    local powerupY = scaling.GAME_HEIGHT - padding - 40
     local slotSize = 40
     local slotSpacing = 10
     local numSlots = 4
     local totalWidth = numSlots * slotSize + (numSlots - 1) * slotSpacing
-    local startX = (GAME_WIDTH - totalWidth) / 2
+    local startX = (scaling.GAME_WIDTH - totalWidth) / 2
 
     for i = 1, numSlots do
         local slotX = startX + (i - 1) * (slotSize + slotSpacing)

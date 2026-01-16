@@ -1,8 +1,7 @@
 local gameplay = {}
 local hud = require("src.hud")
+local scaling = require("src.scaling")
 
-local GAME_WIDTH = 800
-local GAME_HEIGHT = 600
 local MARGIN = 50
 local GRID_SIZE = 16
 local SHIP_SCALE = 3
@@ -69,8 +68,8 @@ function gameplay.load(data)
     local shipWidth = GRID_SIZE * SHIP_SCALE
     local shipHeight = GRID_SIZE * SHIP_SCALE
 
-    player.x = (GAME_WIDTH - shipWidth) / 2
-    player.y = GAME_HEIGHT - MARGIN - shipHeight - 20
+    player.x = (scaling.GAME_WIDTH - shipWidth) / 2
+    player.y = scaling.GAME_HEIGHT - MARGIN - shipHeight - 20
 
     if data.firingPoint then
         player.firingPoint.offsetX = (data.firingPoint.x - 1) * SHIP_SCALE + SHIP_SCALE / 2
@@ -113,9 +112,9 @@ function gameplay.update(dt)
     player.y = player.y + dy * player.speed * dt
 
     local minX = MARGIN
-    local maxX = GAME_WIDTH - MARGIN - shipWidth
+    local maxX = scaling.GAME_WIDTH - MARGIN - shipWidth
     local minY = MARGIN
-    local maxY = GAME_HEIGHT - MARGIN - shipHeight
+    local maxY = scaling.GAME_HEIGHT - MARGIN - shipHeight
 
     player.x = math.max(minX, math.min(maxX, player.x))
     player.y = math.max(minY, math.min(maxY, player.y))

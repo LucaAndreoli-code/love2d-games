@@ -1,8 +1,6 @@
 local shipEditor = {}
 local Button = require("src.button")
-
-local GAME_WIDTH = 800
-local GAME_HEIGHT = 600
+local scaling = require("src.scaling")
 
 local font
 local smallFont
@@ -126,14 +124,14 @@ local function loadPreset(presetIndex)
 end
 
 local function calculateGridLayout()
-    local availableWidth = GAME_WIDTH - MARGIN * 2 - 100
-    local availableHeight = GAME_HEIGHT - 200
+    local availableWidth = scaling.GAME_WIDTH - MARGIN * 2 - 100
+    local availableHeight = scaling.GAME_HEIGHT - 200
 
     cellSize = math.floor(math.min(availableWidth / GRID_SIZE, availableHeight / GRID_SIZE))
     cellSize = math.max(cellSize, 4)
 
     local gridPixelSize = cellSize * GRID_SIZE
-    gridOffsetX = (GAME_WIDTH - gridPixelSize) / 2
+    gridOffsetX = (scaling.GAME_WIDTH - gridPixelSize) / 2
     gridOffsetY = 100
 end
 
@@ -162,13 +160,24 @@ setupDrawButtons = function()
     buttonGroup = Button.newGroup()
     colorButtons = {}
 
-    local buttonY = GAME_HEIGHT - 60
+    local buttonY = scaling.GAME_HEIGHT - 60
     local clearWidth = smallFont:getWidth("Clear")
-    local gap = 40
+    local backWidth = smallFont:getWidth("Back")
+    local gap = 60
+
+    buttonGroup:add(Button.new({
+        text = "Back",
+        x = scaling.GAME_WIDTH / 2 - backWidth - gap,
+        y = buttonY,
+        font = smallFont,
+        onClick = function()
+            shipEditor.back()
+        end
+    }))
 
     buttonGroup:add(Button.new({
         text = "Clear",
-        x = GAME_WIDTH / 2 - clearWidth - gap,
+        x = scaling.GAME_WIDTH / 2 - clearWidth + 22,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -178,10 +187,18 @@ setupDrawButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Next",
-        x = GAME_WIDTH / 2 + gap,
+        x = scaling.GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
+            local coloredCount = 0
+            for y = 1, GRID_SIZE do
+                for x = 1, GRID_SIZE do
+                    if grid[y][x] then coloredCount = coloredCount + 1 end
+                end
+            end
+            print("Colored cells: " .. coloredCount)
+            if coloredCount < 32 then return end
             state = "firing"
             setupFiringButtons()
         end
@@ -211,13 +228,13 @@ setupFiringButtons = function()
     colorButtons = {}
     presetButtons = {}
 
-    local buttonY = GAME_HEIGHT - 60
+    local buttonY = scaling.GAME_HEIGHT - 60
     local backWidth = smallFont:getWidth("Back")
     local gap = 40
 
     buttonGroup:add(Button.new({
         text = "Back",
-        x = GAME_WIDTH / 2 - backWidth - gap,
+        x = scaling.GAME_WIDTH / 2 - backWidth - gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -229,7 +246,7 @@ setupFiringButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Next",
-        x = GAME_WIDTH / 2 + gap,
+        x = scaling.GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -246,13 +263,13 @@ setupConfirmButtons = function()
     colorButtons = {}
     presetButtons = {}
 
-    local buttonY = GAME_HEIGHT - 60
+    local buttonY = scaling.GAME_HEIGHT - 60
     local backWidth = smallFont:getWidth("Back")
     local gap = 40
 
     buttonGroup:add(Button.new({
         text = "Back",
-        x = GAME_WIDTH / 2 - backWidth - gap,
+        x = scaling.GAME_WIDTH / 2 - backWidth - gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -263,7 +280,7 @@ setupConfirmButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Start Game",
-        x = GAME_WIDTH / 2 + gap,
+        x = scaling.GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -292,7 +309,8 @@ end
 
 function shipEditor.update()
     local mx, my = love.mouse.getPosition()
-    buttonGroup:update(mx, my)
+    local gameMx, gameMy = scaling.toGame(mx, my)
+    buttonGroup:update(gameMx, gameMy)
 end
 
 local function getGridCell(mx, my)
@@ -440,13 +458,13 @@ local function drawTitle(text)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     local textWidth = font:getWidth(text)
-    love.graphics.print(text, (GAME_WIDTH - textWidth) / 2, 30)
+    love.graphics.print(text, (scaling.GAME_WIDTH - textWidth) / 2, 30)
 end
 
 local function drawPreview()
     local previewScale = 4
     local previewSize = GRID_SIZE * previewScale
-    local previewX = (GAME_WIDTH - previewSize) / 2
+    local previewX = (scaling.GAME_WIDTH - previewSize) / 2
     local previewY = gridOffsetY
 
     for y = 1, GRID_SIZE do
@@ -490,7 +508,7 @@ function shipEditor.draw()
         love.graphics.setColor(0.7, 0.7, 0.7)
         local hint = "Click on a colored pixel to set the firing point"
         local hintWidth = smallFont:getWidth(hint)
-        love.graphics.print(hint, (GAME_WIDTH - hintWidth) / 2, gridOffsetY + cellSize * GRID_SIZE + 20)
+        love.graphics.print(hint, (scaling.GAME_WIDTH - hintWidth) / 2, gridOffsetY + cellSize * GRID_SIZE + 20)
     elseif state == "confirm" then
         drawTitle("Step 3: Confirm Your Ship")
         drawPreview()
@@ -499,7 +517,7 @@ function shipEditor.draw()
         love.graphics.setColor(0.7, 0.7, 0.7)
         local info = "Firing point marked in green"
         local infoWidth = smallFont:getWidth(info)
-        love.graphics.print(info, (GAME_WIDTH - infoWidth) / 2, gridOffsetY + GRID_SIZE * 4 + 30)
+        love.graphics.print(info, (scaling.GAME_WIDTH - infoWidth) / 2, gridOffsetY + GRID_SIZE * 4 + 30)
     end
 
     buttonGroup:draw()

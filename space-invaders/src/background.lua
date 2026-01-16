@@ -1,8 +1,8 @@
+local scaling = require("src.scaling")
+
 local background = {}
 
 local stars = {}
-local GAME_WIDTH = 800
-local GAME_HEIGHT = 600
 
 function background.load()
     local starCount = 150
@@ -10,8 +10,8 @@ function background.load()
     stars = {}
     for i = 1, starCount do
         table.insert(stars, {
-            x = math.random(0, GAME_WIDTH),
-            y = math.random(0, GAME_HEIGHT),
+            x = math.random(0, scaling.GAME_WIDTH),
+            y = math.random(0, scaling.GAME_HEIGHT),
             size = math.random(1, 4),
             speed = math.random(20, 100)
         })
@@ -21,9 +21,9 @@ end
 function background.update(dt)
     for _, star in ipairs(stars) do
         star.y = star.y + star.speed * dt
-        if star.y > GAME_HEIGHT then
+        if star.y > scaling.GAME_HEIGHT then
             star.y = 0
-            star.x = math.random(0, GAME_WIDTH)
+            star.x = math.random(0, scaling.GAME_WIDTH)
             star.size = math.random(1, 4)
             star.speed = math.random(20, 100)
         end

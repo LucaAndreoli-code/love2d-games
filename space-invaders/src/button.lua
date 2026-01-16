@@ -1,7 +1,7 @@
+local scaling = require("src.scaling")
 local button = {}
 button.__index = button
 
-local GAME_WIDTH = 800
 local defaultFont = nil
 
 function button.setDefaultFont(font)
@@ -45,7 +45,7 @@ function button:setPosition(x, y)
 end
 
 function button:centerHorizontally()
-    self.x = (GAME_WIDTH - self.width) / 2
+    self.x = (scaling.GAME_WIDTH - self.width) / 2
 end
 
 function button:update(mx, my)

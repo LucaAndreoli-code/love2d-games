@@ -1,8 +1,6 @@
 local menu = {}
 local Button = require("src.button")
-
-local GAME_WIDTH = 800
-local GAME_HEIGHT = 600
+local scaling = require("src.scaling")
 
 local font
 local smallFont
@@ -34,7 +32,7 @@ local pendingSettings = {
 local function updateLogoLayout()
     -- Fixed resolution 800x600
     logoScale = 0.3
-    logoX = (GAME_WIDTH - logo:getWidth() * logoScale) / 2
+    logoX = (scaling.GAME_WIDTH - logo:getWidth() * logoScale) / 2
     logoY = MARGIN + 20
 end
 
@@ -46,11 +44,11 @@ local function createButtons(buttonData)
     local group = Button.newGroup()
     local buttonCount = #buttonData
     local textHeight = font:getHeight()
-    local maxWidth = GAME_WIDTH - (MARGIN * 2)
+    local maxWidth = scaling.GAME_WIDTH - (MARGIN * 2)
 
     local logoBottom = getLogoBottom()
     local availableTop = logoBottom + MARGIN
-    local availableBottom = GAME_HEIGHT - MARGIN
+    local availableBottom = scaling.GAME_HEIGHT - MARGIN
     local availableHeight = availableBottom - availableTop
 
     local totalHeightNeeded = buttonCount * textHeight + (buttonCount - 1) * DEFAULT_SPACING
@@ -86,7 +84,7 @@ local function createButtons(buttonData)
         end
 
         local buttonY = startY + (i - 1) * spacing
-        local buttonX = (GAME_WIDTH - textWidth) / 2
+        local buttonX = (scaling.GAME_WIDTH - textWidth) / 2
 
         group:add(Button.new({
             text = displayText,
@@ -172,23 +170,9 @@ function menu.load(startCallback)
     loadMainMenu()
 end
 
--- Scaling variables for window resize
-local scale = 1
-local offsetX = 0
-local offsetY = 0
-
-function menu.calculateScaling(windowWidth, windowHeight)
-    local scaleX = windowWidth / GAME_WIDTH
-    local scaleY = windowHeight / GAME_HEIGHT
-    scale = math.min(scaleX, scaleY) -- Maintain aspect ratio
-    offsetX = (windowWidth - GAME_WIDTH * scale) / 2
-    offsetY = (windowHeight - GAME_HEIGHT * scale) / 2
-end
-
 function menu.update()
     local mx, my = love.mouse.getPosition()
-    local gameMouseX = (mx - offsetX) / scale
-    local gameMouseY = (my - offsetY) / scale
+    local gameMouseX, gameMouseY = scaling.toGame(mx, my)
     buttonGroup:update(gameMouseX, gameMouseY)
 end
 
