@@ -143,6 +143,6 @@ function love.resize(w, h)
     scaling.update(w, h)
 end
 
-function shipEditor.back() 
+function shipEditor.back()
     gameState = "menu"
 end

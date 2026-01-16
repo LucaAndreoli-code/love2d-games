@@ -2,7 +2,7 @@ local gameplay = {}
 local hud = require("src.hud")
 local scaling = require("src.scaling")
 
-local MARGIN = 50
+local MARGIN = 60
 local GRID_SIZE = 16
 local SHIP_SCALE = 3
 
