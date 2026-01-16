@@ -1,52 +1,41 @@
 local gameplay = {}
 local hud = require("src.hud")
 local scaling = require("src.scaling")
-
-local MARGIN = 60
-local GRID_SIZE = 16
-local SHIP_SCALE = 3
-
-local colors = {
-    { r = 1, g = 0,   b = 0 },
-    { r = 0, g = 0.2, b = 0.6 },
-    { r = 0, g = 0,   b = 0 },
-    { r = 1, g = 1,   b = 1 }
-}
+local colors = require("src.constants.colors")
+local gameConst = require("src.constants.game")
 
 local player = {
     x = 0,
     y = 0,
-    speed = 200,
+    speed = gameConst.PLAYER_SPEED,
     shipCanvas = nil,
     firingPoint = { offsetX = 0, offsetY = 0 },
-    fireCooldown = 0.40,
+    fireCooldown = gameConst.FIRE_COOLDOWN,
     lastFired = 0
 }
 
 local bullets = {}
-local BULLET_SPEED = 400
-local BULLET_WIDTH = 4
-local BULLET_HEIGHT = 10
-
 local shipData = nil
 
 local function createShipCanvas(grid)
-    local canvas = love.graphics.newCanvas(GRID_SIZE * SHIP_SCALE, GRID_SIZE * SHIP_SCALE)
+    local gridSize = gameConst.GRID_SIZE
+    local shipScale = gameConst.SHIP_SCALE
+    local canvas = love.graphics.newCanvas(gridSize * shipScale, gridSize * shipScale)
 
     love.graphics.setCanvas(canvas)
     love.graphics.clear(0, 0, 0, 0)
 
-    for y = 1, GRID_SIZE do
-        for x = 1, GRID_SIZE do
+    for y = 1, gridSize do
+        for x = 1, gridSize do
             if grid[y] and grid[y][x] then
                 local colorIndex = grid[y][x]
-                local color = colors[colorIndex]
+                local color = colors.SHIP_PALETTE[colorIndex]
                 love.graphics.setColor(color.r, color.g, color.b)
                 love.graphics.rectangle("fill",
-                    (x - 1) * SHIP_SCALE,
-                    (y - 1) * SHIP_SCALE,
-                    SHIP_SCALE,
-                    SHIP_SCALE
+                    (x - 1) * shipScale,
+                    (y - 1) * shipScale,
+                    shipScale,
+                    shipScale
                 )
             end
         end
@@ -65,15 +54,16 @@ function gameplay.load(data)
 
     player.shipCanvas = createShipCanvas(data.grid)
 
-    local shipWidth = GRID_SIZE * SHIP_SCALE
-    local shipHeight = GRID_SIZE * SHIP_SCALE
+    local shipScale = gameConst.SHIP_SCALE
+    local shipWidth = gameConst.GRID_SIZE * shipScale
+    local shipHeight = gameConst.GRID_SIZE * shipScale
 
     player.x = (scaling.GAME_WIDTH - shipWidth) / 2
-    player.y = scaling.GAME_HEIGHT - MARGIN - shipHeight - 20
+    player.y = scaling.GAME_HEIGHT - gameConst.GAMEPLAY_MARGIN - shipHeight - 20
 
     if data.firingPoint then
-        player.firingPoint.offsetX = (data.firingPoint.x - 1) * SHIP_SCALE + SHIP_SCALE / 2
-        player.firingPoint.offsetY = (data.firingPoint.y - 1) * SHIP_SCALE
+        player.firingPoint.offsetX = (data.firingPoint.x - 1) * shipScale + shipScale / 2
+        player.firingPoint.offsetY = (data.firingPoint.y - 1) * shipScale
     else
         player.firingPoint.offsetX = shipWidth / 2
         player.firingPoint.offsetY = 0
@@ -84,8 +74,9 @@ function gameplay.load(data)
 end
 
 function gameplay.update(dt)
-    local shipWidth = GRID_SIZE * SHIP_SCALE
-    local shipHeight = GRID_SIZE * SHIP_SCALE
+    local shipWidth = gameConst.GRID_SIZE * gameConst.SHIP_SCALE
+    local shipHeight = gameConst.GRID_SIZE * gameConst.SHIP_SCALE
+    local margin = gameConst.GAMEPLAY_MARGIN
 
     local dx, dy = 0, 0
 
@@ -111,10 +102,10 @@ function gameplay.update(dt)
     player.x = player.x + dx * player.speed * dt
     player.y = player.y + dy * player.speed * dt
 
-    local minX = MARGIN
-    local maxX = scaling.GAME_WIDTH - MARGIN - shipWidth
-    local minY = MARGIN
-    local maxY = scaling.GAME_HEIGHT - MARGIN - shipHeight
+    local minX = margin
+    local maxX = scaling.GAME_WIDTH - margin - shipWidth
+    local minY = margin
+    local maxY = scaling.GAME_HEIGHT - margin - shipHeight
 
     player.x = math.max(minX, math.min(maxX, player.x))
     player.y = math.max(minY, math.min(maxY, player.y))
@@ -122,13 +113,13 @@ function gameplay.update(dt)
     player.lastFired = player.lastFired + dt
 
     if love.keyboard.isDown("space") and player.lastFired >= player.fireCooldown then
-        local bulletX = player.x + player.firingPoint.offsetX - BULLET_WIDTH / 2
-        local bulletY = player.y + player.firingPoint.offsetY - BULLET_HEIGHT
+        local bulletX = player.x + player.firingPoint.offsetX - gameConst.BULLET_WIDTH / 2
+        local bulletY = player.y + player.firingPoint.offsetY - gameConst.BULLET_HEIGHT
 
         table.insert(bullets, {
             x = bulletX,
             y = bulletY,
-            speed = BULLET_SPEED
+            speed = gameConst.BULLET_SPEED
         })
 
         player.lastFired = 0
@@ -138,19 +129,19 @@ function gameplay.update(dt)
         local bullet = bullets[i]
         bullet.y = bullet.y - bullet.speed * dt
 
-        if bullet.y + BULLET_HEIGHT < 0 then
+        if bullet.y + gameConst.BULLET_HEIGHT < 0 then
             table.remove(bullets, i)
         end
     end
 end
 
 function gameplay.draw()
-    love.graphics.setColor(0, 1, 0)
+    love.graphics.setColor(colors.GREEN)
     for _, bullet in ipairs(bullets) do
-        love.graphics.rectangle("fill", bullet.x, bullet.y, BULLET_WIDTH, BULLET_HEIGHT)
+        love.graphics.rectangle("fill", bullet.x, bullet.y, gameConst.BULLET_WIDTH, gameConst.BULLET_HEIGHT)
     end
 
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(colors.WHITE)
     if player.shipCanvas then
         love.graphics.draw(player.shipCanvas, player.x, player.y)
     end

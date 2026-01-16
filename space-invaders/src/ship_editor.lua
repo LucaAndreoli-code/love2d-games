@@ -1,12 +1,12 @@
 local shipEditor = {}
 local Button = require("src.button")
 local scaling = require("src.scaling")
+local colors = require("src.constants.colors")
+local fonts = require("src.constants.fonts")
+local gameConst = require("src.constants.game")
 
 local font
 local smallFont
-
-local GRID_SIZE = 16
-local MARGIN = 20
 
 local state = "draw" -- "draw", "firing", "confirm"
 local grid = {}
@@ -15,12 +15,6 @@ local cellSize = 1
 local gridOffsetX = 0
 local gridOffsetY = 0
 
-local colors = {
-    { name = "Red",   r = 1,    g = 0,    b = 0 },
-    { name = "Blue",  r = 0,    g = 0.2,  b = 0.6 },
-    { name = "Black", r = 0,    g = 0,    b = 0 },
-    { name = "Gray",  r = 0.88, g = 0.88, b = 0.88 }
-}
 local selectedColor = 1
 
 local buttonGroup = nil
@@ -101,9 +95,10 @@ local presets = {
 
 local function initGrid()
     grid = {}
-    for y = 1, GRID_SIZE do
+    local gridSize = gameConst.GRID_SIZE
+    for y = 1, gridSize do
         grid[y] = {}
-        for x = 1, GRID_SIZE do
+        for x = 1, gridSize do
             grid[y][x] = nil
         end
     end
@@ -114,8 +109,9 @@ local function loadPreset(presetIndex)
     if not preset then return end
 
     initGrid()
-    for y = 1, GRID_SIZE do
-        for x = 1, GRID_SIZE do
+    local gridSize = gameConst.GRID_SIZE
+    for y = 1, gridSize do
+        for x = 1, gridSize do
             if preset.grid[y] and preset.grid[y][x] then
                 grid[y][x] = preset.grid[y][x]
             end
@@ -124,13 +120,15 @@ local function loadPreset(presetIndex)
 end
 
 local function calculateGridLayout()
-    local availableWidth = scaling.GAME_WIDTH - MARGIN * 2 - 100
+    local gridSize = gameConst.GRID_SIZE
+    local margin = gameConst.UI_MARGIN
+    local availableWidth = scaling.GAME_WIDTH - margin * 2 - 100
     local availableHeight = scaling.GAME_HEIGHT - 200
 
-    cellSize = math.floor(math.min(availableWidth / GRID_SIZE, availableHeight / GRID_SIZE))
+    cellSize = math.floor(math.min(availableWidth / gridSize, availableHeight / gridSize))
     cellSize = math.max(cellSize, 4)
 
-    local gridPixelSize = cellSize * GRID_SIZE
+    local gridPixelSize = cellSize * gridSize
     gridOffsetX = (scaling.GAME_WIDTH - gridPixelSize) / 2
     gridOffsetY = 100
 end
@@ -138,9 +136,10 @@ end
 local function setupPresetButtons()
     presetButtons = {}
 
+    local gridSize = gameConst.GRID_SIZE
     local previewSize = 48
-    local previewScale = previewSize / GRID_SIZE
-    local startX = gridOffsetX + cellSize * GRID_SIZE + 30
+    local previewScale = previewSize / gridSize
+    local startX = gridOffsetX + cellSize * gridSize + 30
     local startY = gridOffsetY
 
     for i, preset in ipairs(presets) do
@@ -192,13 +191,14 @@ setupDrawButtons = function()
         font = smallFont,
         onClick = function()
             local coloredCount = 0
-            for y = 1, GRID_SIZE do
-                for x = 1, GRID_SIZE do
+            local gridSize = gameConst.GRID_SIZE
+            for y = 1, gridSize do
+                for x = 1, gridSize do
                     if grid[y][x] then coloredCount = coloredCount + 1 end
                 end
             end
             print("Colored cells: " .. coloredCount)
-            if coloredCount < 32 then return end
+            if coloredCount < gameConst.MIN_COLORED_CELLS then return end
             state = "firing"
             setupFiringButtons()
         end
@@ -208,7 +208,7 @@ setupDrawButtons = function()
     local paletteX = gridOffsetX - btnSize - 30
     local paletteStartY = gridOffsetY
 
-    for i, color in ipairs(colors) do
+    for i, color in ipairs(colors.SHIP_PALETTE) do
         local btnY = paletteStartY + (i - 1) * (btnSize + 10)
         table.insert(colorButtons, {
             x = paletteX,
@@ -295,8 +295,8 @@ setupConfirmButtons = function()
 end
 
 function shipEditor.load(startGameCallback)
-    font = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 36)
-    smallFont = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 24)
+    font = love.graphics.newFont(fonts.PATH, fonts.SIZE_LARGE)
+    smallFont = love.graphics.newFont(fonts.PATH, fonts.SIZE_XS)
 
     onStartGame = startGameCallback
 
@@ -316,12 +316,13 @@ end
 local function getGridCell(mx, my)
     local relX = mx - gridOffsetX
     local relY = my - gridOffsetY
+    local gridSize = gameConst.GRID_SIZE
 
     if relX >= 0 and relY >= 0 then
         local cellX = math.floor(relX / cellSize) + 1
         local cellY = math.floor(relY / cellSize) + 1
 
-        if cellX >= 1 and cellX <= GRID_SIZE and cellY >= 1 and cellY <= GRID_SIZE then
+        if cellX >= 1 and cellX <= gridSize and cellY >= 1 and cellY <= gridSize then
             return cellX, cellY
         end
     end
@@ -375,21 +376,22 @@ function shipEditor.mousemoved(x, y)
 end
 
 local function drawGrid()
-    for y = 1, GRID_SIZE do
-        for x = 1, GRID_SIZE do
+    local gridSize = gameConst.GRID_SIZE
+    for y = 1, gridSize do
+        for x = 1, gridSize do
             local px = gridOffsetX + (x - 1) * cellSize
             local py = gridOffsetY + (y - 1) * cellSize
 
             if grid[y][x] then
-                local color = colors[grid[y][x]]
+                local color = colors.SHIP_PALETTE[grid[y][x]]
                 love.graphics.setColor(color.r, color.g, color.b)
                 love.graphics.rectangle("fill", px, py, cellSize, cellSize)
             else
-                love.graphics.setColor(0.1, 0.1, 0.1)
+                love.graphics.setColor(colors.GRID_EMPTY)
                 love.graphics.rectangle("fill", px, py, cellSize, cellSize)
             end
 
-            love.graphics.setColor(0.3, 0.3, 0.3)
+            love.graphics.setColor(colors.GRID_BORDER)
             love.graphics.rectangle("line", px, py, cellSize, cellSize)
         end
     end
@@ -400,12 +402,12 @@ local function drawFiringPointMarker()
         local px = gridOffsetX + (firingPoint.x - 1) * cellSize
         local py = gridOffsetY + (firingPoint.y - 1) * cellSize
 
-        love.graphics.setColor(0, 1, 0)
+        love.graphics.setColor(colors.GREEN)
         love.graphics.setLineWidth(3)
         love.graphics.rectangle("line", px - 2, py - 2, cellSize + 4, cellSize + 4)
         love.graphics.setLineWidth(1)
 
-        love.graphics.setColor(0, 1, 0, 0.5)
+        love.graphics.setColor(colors.GREEN[1], colors.GREEN[2], colors.GREEN[3], 0.5)
         love.graphics.circle("fill", px + cellSize / 2, py + cellSize / 2, cellSize / 4)
     end
 end
@@ -416,10 +418,10 @@ local function drawColorPalette()
         love.graphics.rectangle("fill", colorBtn.x, colorBtn.y, colorBtn.width, colorBtn.height)
 
         if colorBtn.colorIndex == selectedColor then
-            love.graphics.setColor(1, 1, 0)
+            love.graphics.setColor(colors.YELLOW)
             love.graphics.setLineWidth(3)
         else
-            love.graphics.setColor(0.5, 0.5, 0.5)
+            love.graphics.setColor(colors.BUTTON_BORDER)
             love.graphics.setLineWidth(1)
         end
         love.graphics.rectangle("line", colorBtn.x, colorBtn.y, colorBtn.width, colorBtn.height)
@@ -428,16 +430,17 @@ local function drawColorPalette()
 end
 
 local function drawPresetButtons()
+    local gridSize = gameConst.GRID_SIZE
     for _, presetBtn in ipairs(presetButtons) do
         love.graphics.setColor(0.15, 0.15, 0.15)
         love.graphics.rectangle("fill", presetBtn.x, presetBtn.y, presetBtn.width, presetBtn.height)
 
         local preset = presetBtn.preset
-        for py = 1, GRID_SIZE do
-            for px = 1, GRID_SIZE do
+        for py = 1, gridSize do
+            for px = 1, gridSize do
                 if preset.grid[py] and preset.grid[py][px] then
                     local colorIndex = preset.grid[py][px]
-                    local color = colors[colorIndex]
+                    local color = colors.SHIP_PALETTE[colorIndex]
                     love.graphics.setColor(color.r, color.g, color.b)
                     love.graphics.rectangle("fill",
                         presetBtn.x + (px - 1) * presetBtn.scale,
@@ -449,28 +452,29 @@ local function drawPresetButtons()
             end
         end
 
-        love.graphics.setColor(0.5, 0.5, 0.5)
+        love.graphics.setColor(colors.BUTTON_BORDER)
         love.graphics.rectangle("line", presetBtn.x, presetBtn.y, presetBtn.width, presetBtn.height)
     end
 end
 
 local function drawTitle(text)
     love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(colors.WHITE)
     local textWidth = font:getWidth(text)
     love.graphics.print(text, (scaling.GAME_WIDTH - textWidth) / 2, 30)
 end
 
 local function drawPreview()
+    local gridSize = gameConst.GRID_SIZE
     local previewScale = 4
-    local previewSize = GRID_SIZE * previewScale
+    local previewSize = gridSize * previewScale
     local previewX = (scaling.GAME_WIDTH - previewSize) / 2
     local previewY = gridOffsetY
 
-    for y = 1, GRID_SIZE do
-        for x = 1, GRID_SIZE do
+    for y = 1, gridSize do
+        for x = 1, gridSize do
             if grid[y][x] then
-                local color = colors[grid[y][x]]
+                local color = colors.SHIP_PALETTE[grid[y][x]]
                 love.graphics.setColor(color.r, color.g, color.b)
                 local px = previewX + (x - 1) * previewScale
                 local py = previewY + (y - 1) * previewScale
@@ -483,17 +487,18 @@ local function drawPreview()
         local fpx = previewX + (firingPoint.x - 1) * previewScale
         local fpy = previewY + (firingPoint.y - 1) * previewScale
 
-        love.graphics.setColor(0, 1, 0)
+        love.graphics.setColor(colors.GREEN)
         love.graphics.setLineWidth(2)
         love.graphics.rectangle("line", fpx - 1, fpy - 1, previewScale + 2, previewScale + 2)
         love.graphics.setLineWidth(1)
     end
 
-    love.graphics.setColor(0.5, 0.5, 0.5)
+    love.graphics.setColor(colors.BUTTON_BORDER)
     love.graphics.rectangle("line", previewX, previewY, previewSize, previewSize)
 end
 
 function shipEditor.draw()
+    local gridSize = gameConst.GRID_SIZE
     if state == "draw" then
         drawTitle("Step 1: Draw Your Ship")
         drawGrid()
@@ -505,19 +510,19 @@ function shipEditor.draw()
         drawFiringPointMarker()
 
         love.graphics.setFont(smallFont)
-        love.graphics.setColor(0.7, 0.7, 0.7)
+        love.graphics.setColor(colors.TEXT_HINT)
         local hint = "Click on a colored pixel to set the firing point"
         local hintWidth = smallFont:getWidth(hint)
-        love.graphics.print(hint, (scaling.GAME_WIDTH - hintWidth) / 2, gridOffsetY + cellSize * GRID_SIZE + 20)
+        love.graphics.print(hint, (scaling.GAME_WIDTH - hintWidth) / 2, gridOffsetY + cellSize * gridSize + 20)
     elseif state == "confirm" then
         drawTitle("Step 3: Confirm Your Ship")
         drawPreview()
 
         love.graphics.setFont(smallFont)
-        love.graphics.setColor(0.7, 0.7, 0.7)
+        love.graphics.setColor(colors.TEXT_HINT)
         local info = "Firing point marked in green"
         local infoWidth = smallFont:getWidth(info)
-        love.graphics.print(info, (scaling.GAME_WIDTH - infoWidth) / 2, gridOffsetY + GRID_SIZE * 4 + 30)
+        love.graphics.print(info, (scaling.GAME_WIDTH - infoWidth) / 2, gridOffsetY + gridSize * 4 + 30)
     end
 
     buttonGroup:draw()

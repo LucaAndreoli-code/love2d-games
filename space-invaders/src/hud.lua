@@ -1,5 +1,8 @@
 local hud = {}
 local scaling = require("src.scaling")
+local colorsConst = require("src.constants.colors")
+local fontsConst = require("src.constants.fonts")
+local gameConst = require("src.constants.game")
 
 -- HUD data
 local data = {
@@ -22,7 +25,7 @@ local function drawTextWithShadow(text, x, y, font, color, align)
     love.graphics.setFont(font)
 
     -- Shadow
-    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.setColor(colorsConst.SHADOW)
     love.graphics.printf(text, x + 2, y + 2, scaling.GAME_WIDTH, align)
 
     -- Main text
@@ -32,27 +35,29 @@ end
 
 function hud.load()
     -- Load fonts
-    fonts.small = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 20)
-    fonts.medium = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 28)
-    fonts.large = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 36)
+    fonts.small = love.graphics.newFont(fontsConst.PATH, fontsConst.SIZE_TINY)
+    fonts.medium = love.graphics.newFont(fontsConst.PATH, fontsConst.SIZE_SMALL)
+    fonts.large = love.graphics.newFont(fontsConst.PATH, fontsConst.SIZE_LARGE)
 end
 
 function hud.draw()
-    local padding = 20
+    local padding = gameConst.UI_MARGIN
+    local healthBarWidth = gameConst.HEALTH_BAR_WIDTH
+    local healthBarHeight = gameConst.HEALTH_BAR_HEIGHT
+    local slotSize = gameConst.POWERUP_SLOT_SIZE
+    local numSlots = gameConst.POWERUP_SLOTS
 
     -- ALTO SINISTRA - Vita
     local healthY = padding
     love.graphics.setFont(fonts.small)
-    drawTextWithShadow("HP:", padding, healthY, fonts.small, { 1, 1, 1 })
+    drawTextWithShadow("HP:", padding, healthY, fonts.small, colorsConst.WHITE)
 
     -- Barra vita
     local healthBarX = padding + fonts.small:getWidth("HP: ")
-    local healthBarWidth = 120
-    local healthBarHeight = 20
     local healthPercent = data.health / data.maxHealth
 
     -- Background barra
-    love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
+    love.graphics.setColor(colorsConst.HEALTH_BAR_BG)
     love.graphics.rectangle("fill", healthBarX, healthY + 2, healthBarWidth, healthBarHeight)
 
     -- Barra vita (verde -> giallo -> rosso in base alla vita)
@@ -70,30 +75,28 @@ function hud.draw()
     love.graphics.rectangle("fill", healthBarX, healthY + 2, healthBarWidth * healthPercent, healthBarHeight)
 
     -- Bordo barra
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(colorsConst.WHITE)
     love.graphics.rectangle("line", healthBarX, healthY + 2, healthBarWidth, healthBarHeight)
 
     -- Testo vita numerica
     love.graphics.setFont(fonts.small)
     local healthText = data.health .. "/" .. data.maxHealth
     local healthTextX = healthBarX + (healthBarWidth - fonts.small:getWidth(healthText)) / 2
-    drawTextWithShadow(healthText, healthTextX, healthY + 2, fonts.small, { 1, 1, 1 })
+    drawTextWithShadow(healthText, healthTextX, healthY + 2, fonts.small, colorsConst.WHITE)
 
     -- ALTO CENTRO - Punti
     local scoreText = "SCORE: " .. data.score
-    drawTextWithShadow(scoreText, 0, padding, fonts.large, { 1, 1, 1 }, "center")
+    drawTextWithShadow(scoreText, 0, padding, fonts.large, colorsConst.WHITE, "center")
 
     -- ALTO DESTRA - Coins
     local coinsText = "COINS: " .. data.coins
     local coinsTextWidth = fonts.medium:getWidth(coinsText)
     local coinsX = scaling.GAME_WIDTH - coinsTextWidth - padding
-    drawTextWithShadow(coinsText, coinsX, padding + 5, fonts.medium, { 1, 0.85, 0 })
+    drawTextWithShadow(coinsText, coinsX, padding + 5, fonts.medium, colorsConst.GOLD)
 
     -- BASSO CENTRO - Potenziamenti (placeholder slots)
-    local powerupY = scaling.GAME_HEIGHT - padding - 40
-    local slotSize = 40
+    local powerupY = scaling.GAME_HEIGHT - padding - slotSize
     local slotSpacing = 10
-    local numSlots = 4
     local totalWidth = numSlots * slotSize + (numSlots - 1) * slotSpacing
     local startX = (scaling.GAME_WIDTH - totalWidth) / 2
 
@@ -101,18 +104,18 @@ function hud.draw()
         local slotX = startX + (i - 1) * (slotSize + slotSpacing)
 
         -- Slot background
-        love.graphics.setColor(0.2, 0.2, 0.2, 0.5)
+        love.graphics.setColor(colorsConst.SLOT_BG)
         love.graphics.rectangle("fill", slotX, powerupY, slotSize, slotSize, 5, 5)
 
         -- Slot border
-        love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+        love.graphics.setColor(colorsConst.SLOT_BORDER)
         love.graphics.setLineWidth(2)
         love.graphics.rectangle("line", slotX, powerupY, slotSize, slotSize, 5, 5)
         love.graphics.setLineWidth(1)
     end
 
     -- Reset color
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(colorsConst.WHITE)
 end
 
 function hud.update(deltaHealth, deltaScore, deltaCoins)

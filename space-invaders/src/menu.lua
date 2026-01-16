@@ -1,13 +1,14 @@
 local menu = {}
 local Button = require("src.button")
 local scaling = require("src.scaling")
+local fontsConst = require("src.constants.fonts")
+local gameConst = require("src.constants.game")
 
 local font
 local smallFont
 local logo
 local logoX, logoY, logoScale
 
-local MARGIN = 20
 local MIN_SPACING = 40
 local DEFAULT_SPACING = 60
 
@@ -31,9 +32,10 @@ local pendingSettings = {
 
 local function updateLogoLayout()
     -- Fixed resolution 800x600
+    local margin = gameConst.UI_MARGIN
     logoScale = 0.3
     logoX = (scaling.GAME_WIDTH - logo:getWidth() * logoScale) / 2
-    logoY = MARGIN + 20
+    logoY = margin + 20
 end
 
 local function getLogoBottom()
@@ -44,11 +46,12 @@ local function createButtons(buttonData)
     local group = Button.newGroup()
     local buttonCount = #buttonData
     local textHeight = font:getHeight()
-    local maxWidth = scaling.GAME_WIDTH - (MARGIN * 2)
+    local margin = gameConst.UI_MARGIN
+    local maxWidth = scaling.GAME_WIDTH - (margin * 2)
 
     local logoBottom = getLogoBottom()
-    local availableTop = logoBottom + MARGIN
-    local availableBottom = scaling.GAME_HEIGHT - MARGIN
+    local availableTop = logoBottom + margin
+    local availableBottom = scaling.GAME_HEIGHT - margin
     local availableHeight = availableBottom - availableTop
 
     local totalHeightNeeded = buttonCount * textHeight + (buttonCount - 1) * DEFAULT_SPACING
@@ -159,8 +162,8 @@ loadSettingsMenu = function()
 end
 
 function menu.load(startCallback)
-    font = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 48)
-    smallFont = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 32)
+    font = love.graphics.newFont(fontsConst.PATH, fontsConst.SIZE_XL)
+    smallFont = love.graphics.newFont(fontsConst.PATH, fontsConst.SIZE_MEDIUM)
     logo = love.graphics.newImage("assets/sprites/logo/logo.png")
 
     Button.setDefaultFont(font)
