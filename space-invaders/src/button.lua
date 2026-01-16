@@ -1,6 +1,7 @@
 local button = {}
 button.__index = button
 
+local GAME_WIDTH = 800
 local defaultFont = nil
 
 function button.setDefaultFont(font)
@@ -43,8 +44,8 @@ function button:setPosition(x, y)
     self.y = y
 end
 
-function button:centerHorizontally(screenWidth)
-    self.x = (screenWidth - self.width) / 2
+function button:centerHorizontally()
+    self.x = (GAME_WIDTH - self.width) / 2
 end
 
 function button:update(mx, my)
@@ -114,11 +115,11 @@ function buttonGroup:checkClick(x, y, mouseButton)
     return false
 end
 
-function buttonGroup:layoutVertical(startX, startY, spacing, screenWidth, centered)
+function buttonGroup:layoutVertical(startX, startY, spacing, centered)
     for i, btn in ipairs(self.buttons) do
         btn.y = startY + (i - 1) * spacing
         if centered then
-            btn:centerHorizontally(screenWidth)
+            btn:centerHorizontally()
         else
             btn.x = startX
         end

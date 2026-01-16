@@ -1,11 +1,13 @@
 local menu = {}
 local Button = require("src.button")
 
+local GAME_WIDTH = 800
+local GAME_HEIGHT = 600
+
 local font
 local smallFont
 local logo
 local logoX, logoY, logoScale
-local screenWidth, screenHeight
 
 local MARGIN = 20
 local MIN_SPACING = 40
@@ -21,28 +23,18 @@ local onStartCallback = nil
 
 local settings = {
     volume = 100,
-    resolutions = {
-        { width = 800,  height = 600 },
-        { width = 1280, height = 720 },
-        { width = 1920, height = 1080 }
-    },
-    currentResolution = 1,
     fullscreen = false
 }
 
 local pendingSettings = {
     volume = 100,
-    currentResolution = 1,
     fullscreen = false
 }
 
 local function updateLogoLayout()
-    if screenHeight < 700 then
-        logoScale = 0.3
-    else
-        logoScale = 0.5
-    end
-    logoX = (screenWidth - logo:getWidth() * logoScale) / 2
+    -- Fixed resolution 800x600
+    logoScale = 0.3
+    logoX = (GAME_WIDTH - logo:getWidth() * logoScale) / 2
     logoY = MARGIN + 20
 end
 
@@ -54,11 +46,11 @@ local function createButtons(buttonData)
     local group = Button.newGroup()
     local buttonCount = #buttonData
     local textHeight = font:getHeight()
-    local maxWidth = screenWidth - (MARGIN * 2)
+    local maxWidth = GAME_WIDTH - (MARGIN * 2)
 
     local logoBottom = getLogoBottom()
     local availableTop = logoBottom + MARGIN
-    local availableBottom = screenHeight - MARGIN
+    local availableBottom = GAME_HEIGHT - MARGIN
     local availableHeight = availableBottom - availableTop
 
     local totalHeightNeeded = buttonCount * textHeight + (buttonCount - 1) * DEFAULT_SPACING
@@ -94,7 +86,7 @@ local function createButtons(buttonData)
         end
 
         local buttonY = startY + (i - 1) * spacing
-        local buttonX = (screenWidth - textWidth) / 2
+        local buttonX = (GAME_WIDTH - textWidth) / 2
 
         group:add(Button.new({
             text = displayText,
@@ -110,11 +102,14 @@ end
 
 loadMainMenu = function()
     buttonGroup = createButtons({
-        { text = "Start", onClick = function()
-            if onStartCallback then
-                onStartCallback()
+        {
+            text = "Start",
+            onClick = function()
+                if onStartCallback then
+                    onStartCallback()
+                end
             end
-        end },
+        },
         {
             text = "Settings",
             onClick = function()
@@ -122,12 +117,11 @@ loadMainMenu = function()
                 loadSettingsMenu()
             end
         },
-        { text = "Quit",  onClick = function() love.event.quit() end }
+        { text = "Quit", onClick = function() love.event.quit() end }
     })
 end
 
 loadSettingsMenu = function()
-    local res = settings.resolutions[pendingSettings.currentResolution]
     local fullscreenText = pendingSettings.fullscreen and "[X] Fullscreen" or "[ ] Fullscreen"
 
     buttonGroup = createButtons({
@@ -135,13 +129,6 @@ loadSettingsMenu = function()
             text = "Volume: " .. pendingSettings.volume .. "%",
             onClick = function()
                 pendingSettings.volume = (pendingSettings.volume + 10) % 110
-                loadSettingsMenu()
-            end
-        },
-        {
-            text = "Resolution: " .. res.width .. "x" .. res.height,
-            onClick = function()
-                pendingSettings.currentResolution = pendingSettings.currentResolution % #settings.resolutions + 1
                 loadSettingsMenu()
             end
         },
@@ -156,16 +143,8 @@ loadSettingsMenu = function()
             text = "Apply",
             onClick = function()
                 settings.volume = pendingSettings.volume
-                settings.currentResolution = pendingSettings.currentResolution
                 settings.fullscreen = pendingSettings.fullscreen
-                local newRes = settings.resolutions[settings.currentResolution]
-                love.window.setMode(newRes.width, newRes.height, {
-                    resizable = true,
-                    fullscreen = settings.fullscreen
-                })
-                screenWidth = love.graphics.getWidth()
-                screenHeight = love.graphics.getHeight()
-                updateLogoLayout()
+                love.window.setFullscreen(settings.fullscreen)
                 loadSettingsMenu()
             end
         },
@@ -173,7 +152,6 @@ loadSettingsMenu = function()
             text = "Back",
             onClick = function()
                 pendingSettings.volume = settings.volume
-                pendingSettings.currentResolution = settings.currentResolution
                 pendingSettings.fullscreen = settings.fullscreen
                 currentMenu = "main"
                 loadMainMenu()
@@ -183,8 +161,6 @@ loadSettingsMenu = function()
 end
 
 function menu.load(startCallback)
-    screenWidth = love.graphics.getWidth()
-    screenHeight = love.graphics.getHeight()
     font = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 48)
     smallFont = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 32)
     logo = love.graphics.newImage("assets/sprites/logo/logo.png")
@@ -196,9 +172,24 @@ function menu.load(startCallback)
     loadMainMenu()
 end
 
+-- Scaling variables for window resize
+local scale = 1
+local offsetX = 0
+local offsetY = 0
+
+function menu.calculateScaling(windowWidth, windowHeight)
+    local scaleX = windowWidth / GAME_WIDTH
+    local scaleY = windowHeight / GAME_HEIGHT
+    scale = math.min(scaleX, scaleY) -- Maintain aspect ratio
+    offsetX = (windowWidth - GAME_WIDTH * scale) / 2
+    offsetY = (windowHeight - GAME_HEIGHT * scale) / 2
+end
+
 function menu.update()
     local mx, my = love.mouse.getPosition()
-    buttonGroup:update(mx, my)
+    local gameMouseX = (mx - offsetX) / scale
+    local gameMouseY = (my - offsetY) / scale
+    buttonGroup:update(gameMouseX, gameMouseY)
 end
 
 function menu.draw()
@@ -214,17 +205,6 @@ end
 
 function menu.getVolume()
     return settings.volume / 100
-end
-
-function menu.resize(w, h)
-    screenWidth, screenHeight = w, h
-    updateLogoLayout()
-
-    if currentMenu == "main" then
-        loadMainMenu()
-    elseif currentMenu == "settings" then
-        loadSettingsMenu()
-    end
 end
 
 return menu

@@ -2,9 +2,19 @@ local background = require("src.background")
 local menu = require("src.menu")
 local shipEditor = require("src.ship_editor")
 local gameplay = require("src.gameplay")
+local button = require("src.button")
 
 local gameState = "menu" -- "menu", "editor", "game"
 local shipData = nil
+
+-- Fixed game resolution
+local GAME_WIDTH = 800
+local GAME_HEIGHT = 600
+
+-- Scaling variables for window resize
+local scale = 1
+local offsetX = 0
+local offsetY = 0
 
 -- CRT Shader
 local crtShader = nil
@@ -17,6 +27,25 @@ local crtSettings = {
     vignetteIntensity = 0.3,
     brightness = 1.05
 }
+
+-- Calculate scaling and offset to maintain aspect ratio
+local function calculateScaling(windowWidth, windowHeight)
+    local scaleX = windowWidth / GAME_WIDTH
+    local scaleY = windowHeight / GAME_HEIGHT
+    scale = math.min(scaleX, scaleY) -- Maintain aspect ratio
+    offsetX = (windowWidth - GAME_WIDTH * scale) / 2
+    offsetY = (windowHeight - GAME_HEIGHT * scale) / 2
+end
+
+-- Transform mouse coordinates from window to game canvas
+local function transformMouseCoords(x, y)
+    local gameX = (x - offsetX) / scale
+    local gameY = (y - offsetY) / scale
+    -- Clamp to canvas bounds
+    gameX = math.max(0, math.min(GAME_WIDTH, gameX))
+    gameY = math.max(0, math.min(GAME_HEIGHT, gameY))
+    return gameX, gameY
+end
 
 local function startGame(data)
     shipData = data
@@ -43,9 +72,12 @@ function love.load()
         crtEnabled = false
     end
 
-    -- Create canvas for rendering
+    -- Create fixed-size canvas for rendering
+    gameCanvas = love.graphics.newCanvas(GAME_WIDTH, GAME_HEIGHT)
+
+    -- Calculate initial scaling
     local w, h = love.graphics.getDimensions()
-    gameCanvas = love.graphics.newCanvas(w, h)
+    calculateScaling(w, h)
 
     background.load()
     menu.load(startEditor)
@@ -64,65 +96,61 @@ function love.update(dt)
 end
 
 function love.draw()
-    love.graphics.setBackgroundColor(0, 0, 0)
+    -- Render everything to fixed-size canvas
+    love.graphics.setCanvas(gameCanvas)
+    love.graphics.clear(0, 0, 0, 1)
 
-    if crtEnabled and crtShader and gameCanvas then
-        -- Render everything to canvas
-        love.graphics.setCanvas(gameCanvas)
-        love.graphics.clear(0, 0, 0, 1)
+    background.draw()
 
-        background.draw()
+    if gameState == "menu" then
+        menu.draw()
+    elseif gameState == "editor" then
+        shipEditor.draw()
+    elseif gameState == "game" then
+        gameplay.draw()
+    end
 
-        if gameState == "menu" then
-            menu.draw()
-        elseif gameState == "editor" then
-            shipEditor.draw()
-        elseif gameState == "game" then
-            gameplay.draw()
-        end
+    love.graphics.setCanvas()
 
-        love.graphics.setCanvas()
+    -- Clear screen with black (for letterboxing)
+    love.graphics.clear(0, 0, 0, 1)
 
-        -- Apply CRT shader and draw canvas to screen
+    -- Apply CRT shader if enabled
+    if crtEnabled and crtShader then
         love.graphics.setShader(crtShader)
 
-        local w, h = love.graphics.getDimensions()
-        crtShader:send("resolution", {w, h})
+        crtShader:send("resolution", { GAME_WIDTH, GAME_HEIGHT })
         crtShader:send("time", love.timer.getTime())
         crtShader:send("scanlineIntensity", crtSettings.scanlineIntensity)
         crtShader:send("curvature", crtSettings.curvature)
         crtShader:send("vignetteIntensity", crtSettings.vignetteIntensity)
         crtShader:send("brightness", crtSettings.brightness)
+    end
 
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(gameCanvas, 0, 0)
+    -- Draw scaled canvas to screen with letterboxing
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(gameCanvas, offsetX, offsetY, 0, scale, scale)
 
+    if crtEnabled and crtShader then
         love.graphics.setShader()
-    else
-        -- Fallback: render without shader
-        background.draw()
-
-        if gameState == "menu" then
-            menu.draw()
-        elseif gameState == "editor" then
-            shipEditor.draw()
-        elseif gameState == "game" then
-            gameplay.draw()
-        end
     end
 end
 
 function love.mousepressed(x, y, button)
+    local gameX, gameY = transformMouseCoords(x, y)
+
     if gameState == "menu" then
-        menu.mousepressed(x, y, button)
+        menu.mousepressed(gameX, gameY, button)
     elseif gameState == "editor" then
-        shipEditor.mousepressed(x, y, button)
+        shipEditor.mousepressed(gameX, gameY, button)
     end
 end
 
 function love.mousemoved(x, y)
+    local gameX, gameY = transformMouseCoords(x, y)
+
     if gameState == "editor" then
-        shipEditor.mousemoved(x, y)
+        shipEditor.mousemoved(gameX, gameY)
     end
 end
 
@@ -139,19 +167,7 @@ function love.keypressed(key)
 end
 
 function love.resize(w, h)
-    -- Recreate canvas with new dimensions
-    if gameCanvas then
-        gameCanvas:release()
-    end
-    gameCanvas = love.graphics.newCanvas(w, h)
-
-    background.resize(w, h)
-
-    if gameState == "menu" then
-        menu.resize(w, h)
-    elseif gameState == "editor" then
-        shipEditor.resize(w, h)
-    elseif gameState == "game" then
-        gameplay.resize(w, h)
-    end
+    -- Recalculate scaling for new window size
+    menu.calculateScaling(w, h)
+    calculateScaling(w, h)
 end

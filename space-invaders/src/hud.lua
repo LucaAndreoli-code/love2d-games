@@ -1,6 +1,7 @@
 local hud = {}
 
-local screenWidth, screenHeight
+local GAME_WIDTH = 800
+local GAME_HEIGHT = 600
 
 -- HUD data
 local data = {
@@ -24,17 +25,14 @@ local function drawTextWithShadow(text, x, y, font, color, align)
 
     -- Shadow
     love.graphics.setColor(0, 0, 0, 0.7)
-    love.graphics.printf(text, x + 2, y + 2, screenWidth, align)
+    love.graphics.printf(text, x + 2, y + 2, GAME_WIDTH, align)
 
     -- Main text
     love.graphics.setColor(color[1], color[2], color[3])
-    love.graphics.printf(text, x, y, screenWidth, align)
+    love.graphics.printf(text, x, y, GAME_WIDTH, align)
 end
 
 function hud.load()
-    screenWidth = love.graphics.getWidth()
-    screenHeight = love.graphics.getHeight()
-
     -- Load fonts
     fonts.small = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 20)
     fonts.medium = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 28)
@@ -90,16 +88,16 @@ function hud.draw()
     -- ALTO DESTRA - Coins
     local coinsText = "COINS: " .. data.coins
     local coinsTextWidth = fonts.medium:getWidth(coinsText)
-    local coinsX = screenWidth - coinsTextWidth - padding
+    local coinsX = GAME_WIDTH - coinsTextWidth - padding
     drawTextWithShadow(coinsText, coinsX, padding + 5, fonts.medium, {1, 0.85, 0})
 
     -- BASSO CENTRO - Potenziamenti (placeholder slots)
-    local powerupY = screenHeight - padding - 40
+    local powerupY = GAME_HEIGHT - padding - 40
     local slotSize = 40
     local slotSpacing = 10
     local numSlots = 4
     local totalWidth = numSlots * slotSize + (numSlots - 1) * slotSpacing
-    local startX = (screenWidth - totalWidth) / 2
+    local startX = (GAME_WIDTH - totalWidth) / 2
 
     for i = 1, numSlots do
         local slotX = startX + (i - 1) * (slotSize + slotSpacing)
@@ -117,10 +115,6 @@ function hud.draw()
 
     -- Reset color
     love.graphics.setColor(1, 1, 1)
-end
-
-function hud.resize(w, h)
-    screenWidth, screenHeight = w, h
 end
 
 function hud.update(deltaHealth, deltaScore, deltaCoins)

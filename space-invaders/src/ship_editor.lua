@@ -1,9 +1,11 @@
 local shipEditor = {}
 local Button = require("src.button")
 
+local GAME_WIDTH = 800
+local GAME_HEIGHT = 600
+
 local font
 local smallFont
-local screenWidth, screenHeight
 
 local GRID_SIZE = 16
 local MARGIN = 20
@@ -16,10 +18,10 @@ local gridOffsetX = 0
 local gridOffsetY = 0
 
 local colors = {
-    { name = "Red",   r = 1, g = 0,   b = 0 },
-    { name = "Blue",  r = 0, g = 0.2, b = 0.6 },
-    { name = "Black", r = 0, g = 0,   b = 0 },
-    { name = "Gray", r = 0.88, g = 0.88, b = 0.88 }
+    { name = "Red",   r = 1,    g = 0,    b = 0 },
+    { name = "Blue",  r = 0,    g = 0.2,  b = 0.6 },
+    { name = "Black", r = 0,    g = 0,    b = 0 },
+    { name = "Gray",  r = 0.88, g = 0.88, b = 0.88 }
 }
 local selectedColor = 1
 
@@ -36,6 +38,47 @@ local setupConfirmButtons
 -- Preset ship designs (16x16 grids)
 -- Colors: 1=Red, 2=Blue, 3=Black, 4=White, nil=empty
 local presets = {
+
+    {
+        grid = {
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, 2,   4,   4,   2,   nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, 4,   1,   4,   4,   1,   4,   nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, 4,   4,   1,   4,   4,   1,   4,   4,   nil, nil, nil, nil },
+            { nil, nil, nil, 4,   4,   4,   4,   3,   3,   4,   4,   4,   4,   nil, nil, nil },
+            { nil, nil, 4,   4,   nil, 4,   2,   4,   4,   2,   4,   nil, 4,   4,   nil, nil },
+            { nil, 4,   4,   nil, nil, 4,   4,   4,   4,   4,   1,   nil, nil, 4,   4,   nil },
+            { nil, 4,   nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, 4,   nil },
+            { nil, 1,   nil, nil, nil, nil, nil, 1,   1,   nil, nil, nil, nil, nil, 1,   nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+        }
+    },
+    {
+        grid = {
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, 4,   2,   4,   4,   1,   4,   nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, 4,   4,   2,   4,   4,   1,   4,   4,   nil, nil, nil, nil },
+            { nil, nil, nil, 4,   4,   4,   2,   4,   4,   1,   4,   4,   4,   nil, nil, nil },
+            { nil, nil, 4,   4,   4,   4,   4,   1,   2,   4,   4,   4,   4,   4,   nil, nil },
+            { nil, 4,   4,   4,   4,   4,   2,   4,   4,   1,   4,   4,   4,   4,   4,   nil },
+            { 4,   4,   4,   nil, 4,   2,   4,   4,   4,   4,   1,   4,   nil, 4,   4,   4 },
+            { 4,   4,   nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, 4,   4 },
+            { 1,   1,   nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, 1,   1 },
+            { nil, nil, nil, nil, nil, nil, nil, 1,   1,   nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
+        }
+    },
     {
         grid = {
             { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
@@ -54,47 +97,6 @@ local presets = {
             { nil, nil, nil, nil, nil, nil, nil, 1,   1,   nil, nil, nil, nil, nil, nil, nil },
             { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
             { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }
-        }
-    },
-    {
-        grid = {
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   4,   4,   nil, nil, nil, nil },
-            { nil, nil, nil, 4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   nil, nil, nil },
-            { nil, nil, 4,   4,   nil, 4,   4,   4,   4,   4,   4,   nil, 4,   4,   nil, nil },
-            { nil, 4,   4,   nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, 4,   4,   nil },
-            { nil, 4,   nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, 4,   nil },
-            { nil, 1,   nil, nil, nil, nil, nil, 1,   1,   nil, nil, nil, nil, nil, 1,   nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-        }
-    },
-    {
-        grid = {
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, 4,   4,   4,   4,   4,   4,   4,   4,   nil, nil, nil, nil },
-            { nil, nil, nil, 4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   nil, nil, nil },
-            { nil, nil, 4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   nil, nil },
-            { nil, 4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   nil },
-            { 4,   4,   4,   nil, 4,   4,   4,   4,   4,   4,   4,   4,   nil, 4,   4,   4 },
-            { 4,   4,   nil, nil, nil, 4,   4,   4,   4,   4,   4,   nil, nil, nil, 4,   4 },
-            { 4,   nil, nil, nil, nil, nil, 4,   4,   4,   4,   nil, nil, nil, nil, nil, 4 },
-            { nil, nil, nil, nil, nil, nil, nil, 4,   4,   nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-            { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil },
-
         }
     },
 }
@@ -124,14 +126,14 @@ local function loadPreset(presetIndex)
 end
 
 local function calculateGridLayout()
-    local availableWidth = screenWidth - MARGIN * 2 - 100
-    local availableHeight = screenHeight - 200
+    local availableWidth = GAME_WIDTH - MARGIN * 2 - 100
+    local availableHeight = GAME_HEIGHT - 200
 
     cellSize = math.floor(math.min(availableWidth / GRID_SIZE, availableHeight / GRID_SIZE))
     cellSize = math.max(cellSize, 4)
 
     local gridPixelSize = cellSize * GRID_SIZE
-    gridOffsetX = (screenWidth - gridPixelSize) / 2
+    gridOffsetX = (GAME_WIDTH - gridPixelSize) / 2
     gridOffsetY = 100
 end
 
@@ -160,13 +162,13 @@ setupDrawButtons = function()
     buttonGroup = Button.newGroup()
     colorButtons = {}
 
-    local buttonY = screenHeight - 60
+    local buttonY = GAME_HEIGHT - 60
     local clearWidth = smallFont:getWidth("Clear")
     local gap = 40
 
     buttonGroup:add(Button.new({
         text = "Clear",
-        x = screenWidth / 2 - clearWidth - gap,
+        x = GAME_WIDTH / 2 - clearWidth - gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -176,7 +178,7 @@ setupDrawButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Next",
-        x = screenWidth / 2 + gap,
+        x = GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -209,13 +211,13 @@ setupFiringButtons = function()
     colorButtons = {}
     presetButtons = {}
 
-    local buttonY = screenHeight - 60
+    local buttonY = GAME_HEIGHT - 60
     local backWidth = smallFont:getWidth("Back")
     local gap = 40
 
     buttonGroup:add(Button.new({
         text = "Back",
-        x = screenWidth / 2 - backWidth - gap,
+        x = GAME_WIDTH / 2 - backWidth - gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -227,7 +229,7 @@ setupFiringButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Next",
-        x = screenWidth / 2 + gap,
+        x = GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -244,13 +246,13 @@ setupConfirmButtons = function()
     colorButtons = {}
     presetButtons = {}
 
-    local buttonY = screenHeight - 60
+    local buttonY = GAME_HEIGHT - 60
     local backWidth = smallFont:getWidth("Back")
     local gap = 40
 
     buttonGroup:add(Button.new({
         text = "Back",
-        x = screenWidth / 2 - backWidth - gap,
+        x = GAME_WIDTH / 2 - backWidth - gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -261,7 +263,7 @@ setupConfirmButtons = function()
 
     buttonGroup:add(Button.new({
         text = "Start Game",
-        x = screenWidth / 2 + gap,
+        x = GAME_WIDTH / 2 + gap,
         y = buttonY,
         font = smallFont,
         onClick = function()
@@ -276,8 +278,6 @@ setupConfirmButtons = function()
 end
 
 function shipEditor.load(startGameCallback)
-    screenWidth = love.graphics.getWidth()
-    screenHeight = love.graphics.getHeight()
     font = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 36)
     smallFont = love.graphics.newFont("assets/fonts/Jersey10-Regular.ttf", 24)
 
@@ -440,13 +440,13 @@ local function drawTitle(text)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     local textWidth = font:getWidth(text)
-    love.graphics.print(text, (screenWidth - textWidth) / 2, 30)
+    love.graphics.print(text, (GAME_WIDTH - textWidth) / 2, 30)
 end
 
 local function drawPreview()
     local previewScale = 4
     local previewSize = GRID_SIZE * previewScale
-    local previewX = (screenWidth - previewSize) / 2
+    local previewX = (GAME_WIDTH - previewSize) / 2
     local previewY = gridOffsetY
 
     for y = 1, GRID_SIZE do
@@ -490,7 +490,7 @@ function shipEditor.draw()
         love.graphics.setColor(0.7, 0.7, 0.7)
         local hint = "Click on a colored pixel to set the firing point"
         local hintWidth = smallFont:getWidth(hint)
-        love.graphics.print(hint, (screenWidth - hintWidth) / 2, gridOffsetY + cellSize * GRID_SIZE + 20)
+        love.graphics.print(hint, (GAME_WIDTH - hintWidth) / 2, gridOffsetY + cellSize * GRID_SIZE + 20)
     elseif state == "confirm" then
         drawTitle("Step 3: Confirm Your Ship")
         drawPreview()
@@ -499,23 +499,10 @@ function shipEditor.draw()
         love.graphics.setColor(0.7, 0.7, 0.7)
         local info = "Firing point marked in green"
         local infoWidth = smallFont:getWidth(info)
-        love.graphics.print(info, (screenWidth - infoWidth) / 2, gridOffsetY + GRID_SIZE * 4 + 30)
+        love.graphics.print(info, (GAME_WIDTH - infoWidth) / 2, gridOffsetY + GRID_SIZE * 4 + 30)
     end
 
     buttonGroup:draw()
-end
-
-function shipEditor.resize(w, h)
-    screenWidth, screenHeight = w, h
-    calculateGridLayout()
-
-    if state == "draw" then
-        setupDrawButtons()
-    elseif state == "firing" then
-        setupFiringButtons()
-    elseif state == "confirm" then
-        setupConfirmButtons()
-    end
 end
 
 function shipEditor.getShipData()
