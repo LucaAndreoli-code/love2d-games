@@ -130,6 +130,14 @@ function hud.update(deltaHealth, deltaScore, deltaCoins)
     end
 end
 
+function hud.setLives(lives)
+    data.health = lives
+end
+
+function hud.setScore(newScore)
+    data.score = newScore
+end
+
 function hud.getData()
     return data
 end

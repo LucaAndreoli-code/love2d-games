@@ -127,11 +127,16 @@ function love.mousemoved(x, y)
 end
 
 function love.keypressed(key)
-    -- if gameState == "game" and key == "q" then
-    --     gameState = "menu"
-    -- end
+    -- Handle gameplay keypresses (game over restart/menu)
+    if gameState == "game" then
+        local result = gameplay.keypressed(key)
+        if result == "menu" then
+            gameState = "menu"
+            return
+        end
+    end
 
-    -- Toggle CRT shader with F1
+    -- Toggle CRT shader with C key
     if key == "c" and crtShader then
         crtEnabled = not crtEnabled
         print("CRT Effect: " .. (crtEnabled and "ON" or "OFF"))
