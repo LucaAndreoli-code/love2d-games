@@ -1,4 +1,6 @@
+local Logger = require("src.logger.logger")
+local Game = require("src.init")
+
 function love.load()
-    love.window.setTitle("BASE")
-    love.window.setMode(800, 600)
+    Game.load()
 end
