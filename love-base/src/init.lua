@@ -1,4 +1,4 @@
-local Logger = require("src.logger.logger")
+local Logger = require("src.logger")
 local Game = {}
 
 Game.scenes = require("src.scenes.init")

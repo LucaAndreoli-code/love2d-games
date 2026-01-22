@@ -11,23 +11,23 @@ love-base/
 │   ├── font/          # Font personalizzati
 │   ├── sounds/        # Effetti sonori e musica
 │   └── sprites/       # Sprite sheets e immagini
-├── shaders/           # GLSL shaders personalizzati
+├── shaders/           # GLSL shaders
 ├── src/
 │   ├── constants/     # Configurazioni centralizzate (colori, dimensioni, velocità)
 │   │   └── init.lua   # Aggregatore constants
 │   ├── scenes/        # Scene di gioco (menu, game, pause, gameover)
 │   │   └── init.lua   # Aggregatore scenes
-│   ├── systems/       # Sistemi core (logger, state machine, input handler, asset manager)
-│   │   ├── logger.lua
+│   ├── systems/       # Sistemi core (state machine, input handler, asset manager)
 │   │   └── init.lua   # Aggregatore systems
 │   ├── ui/            # Componenti UI riusabili (button, slider, panel, HUD)
 │   │   └── init.lua   # Aggregatore UI
 │   ├── utils/         # Utility functions (math, string, table helpers)
 │   │   └── init.lua   # Aggregatore utils
 │   └── init.lua       # Master loader (carica tutti i moduli)
+│   └── logger.lua     # Logger a 4 livelli
 ├── conf.lua           # Configurazione Love2D (window, modules, identity)
 └── main.lua           # Entry point minimale
-```
+└── build.lua          # File configurazione per love-build (https://github.com/ellraiser/love-build)
 
 ## Architettura
 
@@ -36,14 +36,12 @@ love-base/
 Ogni modulo principale ha un `init.lua` che aggrega e espone i sottomoduli. Questo pattern:
 - Crea un namespace pulito e gerarchico
 - Permette caricamento centralizzato
-- Facilita l'autocomplete nell'IDE
 - Evita collisioni di nomi globali
 
 **Esempio `src/systems/init.lua`:**
 ```lua
 local Systems = {}
 
-Systems.logger = require("src.systems.logger")
 Systems.stateMachine = require("src.systems.state_machine")
 Systems.input = require("src.systems.input_handler")
 Systems.assets = require("src.systems.asset_manager")
@@ -73,12 +71,14 @@ return Game
 
 **Usage:**
 ```lua
+local Logger = require("src.logger")
+
 function love.load()
     Game = require("src.init")  -- Carica tutto in un colpo
     Game.systems:initialize()
     
     -- Accesso pulito e gerarchico
-    Game.systems.logger.info("Game started", "main")
+    Logger.info("Game started", "main")
     Game.systems.stateMachine:change("menu")
 end
 ```
@@ -107,12 +107,6 @@ love.graphics.setColor(Game.constants.colors.primary)
 #### `systems/`
 Sistemi architetturali fondamentali riusabili tra progetti:
 
-**`logger.lua`** - Sistema di logging con livelli
-- 4 livelli: DEBUG, INFO, WARNING, ERROR
-- Output colorato ANSI nel terminale
-- Flush automatico per vedere log in tempo reale
-- Flag `--debug` per abilitare DEBUG level
-
 **`state_machine.lua`** - Gestione scene/stati
 - Registra scene con nome
 - Gestisce transizioni tra scene
@@ -128,6 +122,13 @@ Sistemi architetturali fondamentali riusabili tra progetti:
 - Cache di immagini/font/suoni
 - Caricamento lazy o preload
 - Evita duplicati in memoria
+
+#### `logger.lua` (direttamente in `src/`)
+Sistema di logging utilizzato ovunque. Posizionato in `src/logger.lua` invece che in `systems/` per accesso più breve e diretto:
+```lua
+local Logger = require("src.logger")
+Logger.info("Message", "source")
+```
 
 #### `scenes/`
 Scene di gioco isolate con interfaccia standard:
@@ -230,7 +231,7 @@ Sistema di logging con 4 livelli di severità e output colorato.
 
 **Usage:**
 ```lua
-local Logger = require("src.systems.logger")
+local Logger = require("src.logger")
 
 -- Con source tag per identificare origine
 Logger.debug("Player position: 100, 200", "entities/player")
@@ -254,21 +255,23 @@ Logger.error("Failed to load texture", "systems/assets")
 
 **Configurazione livello minimo:**
 ```lua
+local Logger = require("src.logger")
+
 -- Mostra solo WARNING ed ERROR
-Game.systems.logger.setLevel(Game.systems.logger.LEVELS.WARNING)
+Logger.setLevel(Logger.LEVELS.WARNING)
 
 -- Disabilita tutto
-Game.systems.logger.disable()
+Logger.disable()
 
 -- Riabilita tutto
-Game.systems.logger.enable()
+Logger.enable()
 ```
 
 **Flag `--debug`:**
 Il logger controlla automaticamente la presenza del flag `--debug` negli argomenti:
 ```bash
 love .              # currentLevel = INFO (default)
-love . --debug      # currentLevel = DEBUG
+love . --debug      # currentLevel = DEBUG (se avviato tramite VSCODE)
 ```
 
 Implementazione nel logger:
@@ -314,7 +317,7 @@ Se copi/incolli lo stesso tipo di codice 3 volte → estrai in un modulo dedicat
 # Sviluppo normale (mostra INFO, WARNING, ERROR)
 love .
 
-# Con debug logging (mostra anche DEBUG)
+# Con debug logging (mostra anche DEBUG - SOLO TRAMITE VSCODE con Lua Local Debugger)
 love . --debug
 ```
 
@@ -348,5 +351,4 @@ Configurazione `.vscode/launch.json`:
 ```
 
 Richiede estensione: **Local Lua Debugger** (tomblind)
-
 F5 per lanciare, breakpoint funzionano su assegnazioni variabili e inizio funzioni.
