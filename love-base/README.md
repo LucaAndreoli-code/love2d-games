@@ -1,44 +1,44 @@
 # Love2D Base Template
 
-Template modulare per progetti Love2D con struttura scalabile e pattern "init aggregator" per namespace pulito.
+Modular template for Love2D projects with scalable structure and "init aggregator" pattern for clean namespace.
 
-## Struttura
+## Structure
 
 ```
 love-base/
 ├── assets/
-│   ├── data/          # File dati (JSON, Lua tables, presets)
-│   ├── font/          # Font personalizzati
-│   ├── sounds/        # Effetti sonori e musica
-│   └── sprites/       # Sprite sheets e immagini
+│   ├── data/          # Data files (JSON, Lua tables, presets)
+│   ├── font/          # Custom fonts
+│   ├── sounds/        # Sound effects and music
+│   └── sprites/       # Sprite sheets and images
 ├── shaders/           # GLSL shaders
 ├── src/
-│   ├── constants/     # Configurazioni centralizzate (colori, dimensioni, velocità)
-│   │   └── init.lua   # Aggregatore constants
-│   ├── scenes/        # Scene di gioco (menu, game, pause, gameover)
-│   │   └── init.lua   # Aggregatore scenes
-│   ├── systems/       # Sistemi core (state machine, input handler, asset manager)
-│   │   └── init.lua   # Aggregatore systems
-│   ├── ui/            # Componenti UI riusabili (button, slider, panel, HUD)
-│   │   └── init.lua   # Aggregatore UI
+│   ├── constants/     # Centralized configurations (colors, sizes, speeds)
+│   │   └── init.lua   # Constants aggregator
+│   ├── scenes/        # Game scenes (menu, game, pause, gameover)
+│   │   └── init.lua   # Scenes aggregator
+│   ├── systems/       # Core systems (state machine, input handler, asset manager)
+│   │   └── init.lua   # Systems aggregator
+│   ├── ui/            # Reusable UI components (button, slider, panel, HUD)
+│   │   └── init.lua   # UI aggregator
 │   ├── utils/         # Utility functions (math, string, table helpers)
-│   │   └── init.lua   # Aggregatore utils
-│   └── init.lua       # Master loader (carica tutti i moduli)
-│   └── logger.lua     # Logger a 4 livelli
-├── conf.lua           # Configurazione Love2D (window, modules, identity)
-└── main.lua           # Entry point minimale
-└── build.lua          # File configurazione per love-build (https://github.com/ellraiser/love-build)
+│   │   └── init.lua   # Utils aggregator
+│   └── init.lua       # Master loader (loads all modules)
+│   └── logger.lua     # 4-level logger
+├── conf.lua           # Love2D configuration (window, modules, identity)
+└── main.lua           # Minimal entry point
+└── build.lua          # Configuration file for love-build (https://github.com/ellraiser/love-build)
 
-## Architettura
+## Architecture
 
 ### Init Aggregator Pattern
 
-Ogni modulo principale ha un `init.lua` che aggrega e espone i sottomoduli. Questo pattern:
-- Crea un namespace pulito e gerarchico
-- Permette caricamento centralizzato
-- Evita collisioni di nomi globali
+Each main module has an `init.lua` that aggregates and exposes submodules. This pattern:
+- Creates a clean and hierarchical namespace
+- Allows centralized loading
+- Avoids global name collisions
 
-**Esempio `src/systems/init.lua`:**
+**Example `src/systems/init.lua`:**
 ```lua
 local Systems = {}
 
@@ -47,7 +47,7 @@ Systems.input = require("src.systems.input_handler")
 Systems.assets = require("src.systems.asset_manager")
 
 function Systems:initialize()
-    -- Init centralizzato nell'ordine corretto
+    -- Centralized init in correct order
     self.stateMachine:init()
     self.input:init()
     self.assets:init()
@@ -56,7 +56,7 @@ end
 return Systems
 ```
 
-**Esempio `src/init.lua` (master loader):**
+**Example `src/init.lua` (master loader):**
 ```lua
 local Game = {}
 
@@ -74,79 +74,79 @@ return Game
 local Logger = require("src.logger")
 
 function love.load()
-    Game = require("src.init")  -- Carica tutto in un colpo
+    Game = require("src.init")  -- Load everything at once
     Game.systems:initialize()
     
-    -- Accesso pulito e gerarchico
+    -- Clean and hierarchical access
     Logger.info("Game started", "main")
     Game.systems.stateMachine:change("menu")
 end
 ```
 
-### Moduli Core
+### Core Modules
 
 #### `constants/`
-Centralizza tutte le variabili di configurazione:
-- Colori palette
-- Dimensioni finestra/griglia
-- Velocità movimento
-- Margini e spacing
+Centralizes all configuration variables:
+- Color palette
+- Window/grid dimensions
+- Movement speeds
+- Margins and spacing
 
-**Evita:**
+**Avoid:**
 ```lua
-player.speed = 200  -- Variabile sparsa nel codice
-love.graphics.setColor(0.2, 0.6, 1.0)  -- Colore hardcoded
+player.speed = 200  -- Scattered variable in code
+love.graphics.setColor(0.2, 0.6, 1.0)  -- Hardcoded color
 ```
 
-**Meglio:**
+**Better:**
 ```lua
 player.speed = Game.constants.game.playerSpeed
 love.graphics.setColor(Game.constants.colors.primary)
 ```
 
 #### `systems/`
-Sistemi architetturali fondamentali riusabili tra progetti:
+Fundamental architectural systems reusable across projects:
 
-**`state_machine.lua`** - Gestione scene/stati
-- Registra scene con nome
-- Gestisce transizioni tra scene
-- Chiama `enter()`/`exit()` quando cambi scena
-- Routing di `update()`/`draw()` alla scena attiva
+**`state_machine.lua`** - Scene/state management
+- Registers scenes by name
+- Manages transitions between scenes
+- Calls `enter()`/`exit()` when changing scene
+- Routes `update()`/`draw()` to active scene
 
-**`input_handler.lua`** - Input centralizzato
-- Gestisce keyboard/mouse/gamepad
-- Permette rebinding tasti
-- Separa input da logica di gioco
+**`input_handler.lua`** - Centralized input
+- Handles keyboard/mouse/gamepad
+- Allows key rebinding
+- Separates input from game logic
 
-**`asset_manager.lua`** - Caricamento risorse
-- Cache di immagini/font/suoni
-- Caricamento lazy o preload
-- Evita duplicati in memoria
+**`asset_manager.lua`** - Resource loading
+- Cache for images/fonts/sounds
+- Lazy loading or preload
+- Avoids duplicates in memory
 
-#### `logger.lua` (direttamente in `src/`)
-Sistema di logging utilizzato ovunque. Posizionato in `src/logger.lua` invece che in `systems/` per accesso più breve e diretto:
+#### `logger.lua` (directly in `src/`)
+Logging system used everywhere. Located in `src/logger.lua` instead of `systems/` for shorter and direct access:
 ```lua
 local Logger = require("src.logger")
 Logger.info("Message", "source")
 ```
 
 #### `scenes/`
-Scene di gioco isolate con interfaccia standard:
+Isolated game scenes with standard interface:
 
 ```lua
--- Interfaccia scene
+-- Scene interface
 local Scene = {}
 
 function Scene:enter()
-    -- Setup quando si entra nella scena
+    -- Setup when entering the scene
 end
 
 function Scene:exit()
-    -- Cleanup quando si esce
+    -- Cleanup when exiting
 end
 
 function Scene:update(dt)
-    -- Logica update
+    -- Update logic
 end
 
 function Scene:draw()
@@ -160,17 +160,17 @@ end
 return Scene
 ```
 
-Ogni scena è completamente indipendente. Lo state machine gestisce le transizioni.
+Each scene is completely independent. The state machine manages transitions.
 
 #### `ui/`
-Componenti UI riusabili tra scene diverse:
+Reusable UI components across different scenes:
 
-**Quando usare `ui/`:**
-- Bottone usato in menu + pause + gameover → `ui/button.lua`
-- HUD usato solo in gameplay → Può stare in `scenes/game.lua` o `ui/hud.lua`
-- Slider usato in settings → `ui/slider.lua`
+**When to use `ui/`:**
+- Button used in menu + pause + gameover → `ui/button.lua`
+- HUD used only in gameplay → Can be in `scenes/game.lua` or `ui/hud.lua`
+- Slider used in settings → `ui/slider.lua`
 
-**Pattern component:**
+**Component pattern:**
 ```lua
 -- ui/button.lua
 local Button = {}
@@ -198,7 +198,7 @@ return Button
 ```
 
 #### `utils/`
-Helper functions generiche riusabili:
+Generic reusable helper functions:
 
 ```lua
 -- utils/math.lua
@@ -221,19 +221,19 @@ return MathUtils
 
 ### Logger System
 
-Sistema di logging con 4 livelli di severità e output colorato.
+Logging system with 4 severity levels and colored output.
 
-**Livelli:**
-- `DEBUG` (1): Informazioni dettagliate, solo con flag `--debug`
-- `INFO` (2): Informazioni generali, sempre visibile
-- `WARNING` (3): Avvisi, sempre visibile
-- `ERROR` (4): Errori critici, sempre visibile
+**Levels:**
+- `DEBUG` (1): Detailed information, only with `--debug` flag
+- `INFO` (2): General information, always visible
+- `WARNING` (3): Warnings, always visible
+- `ERROR` (4): Critical errors, always visible
 
 **Usage:**
 ```lua
 local Logger = require("src.logger")
 
--- Con source tag per identificare origine
+-- With source tag to identify origin
 Logger.debug("Player position: 100, 200", "entities/player")
 Logger.info("Level loaded successfully", "scenes/game")
 Logger.warning("Low memory", "systems/assets")
@@ -247,34 +247,34 @@ Logger.error("Failed to load texture", "systems/assets")
 [14:32:17] ERROR [systems/assets]: Failed to load texture
 ```
 
-**Colori ANSI nel terminale:**
+**ANSI colors in terminal:**
 - DEBUG: Cyan (`\27[36m`)
 - INFO: Green (`\27[32m`)
 - WARNING: Yellow (`\27[33m`)
 - ERROR: Red (`\27[31m`)
 
-**Configurazione livello minimo:**
+**Minimum level configuration:**
 ```lua
 local Logger = require("src.logger")
 
--- Mostra solo WARNING ed ERROR
+-- Show only WARNING and ERROR
 Logger.setLevel(Logger.LEVELS.WARNING)
 
--- Disabilita tutto
+-- Disable all
 Logger.disable()
 
--- Riabilita tutto
+-- Enable all
 Logger.enable()
 ```
 
-**Flag `--debug`:**
-Il logger controlla automaticamente la presenza del flag `--debug` negli argomenti:
+**`--debug` flag:**
+The logger automatically checks for the `--debug` flag in arguments:
 ```bash
 love .              # currentLevel = INFO (default)
-love . --debug      # currentLevel = DEBUG (se avviato tramite VSCODE)
+love . --debug      # currentLevel = DEBUG (if launched via VSCODE)
 ```
 
-Implementazione nel logger:
+Logger implementation:
 ```lua
 local function checkDebugMode()
     if arg then
@@ -290,40 +290,40 @@ end
 Logger.currentLevel = checkDebugMode() and Logger.LEVELS.DEBUG or Logger.LEVELS.INFO
 ```
 
-### Quando Aggiungere Moduli
+### When to Add Modules
 
-**Presenti da subito nel template:**
-- `constants/` - Sempre utile anche per progetti piccoli
-- `systems/` - Logger e architettura base
-- `utils/` - Helper comuni
-- `scenes/` - Anche un gioco semplice ha almeno menu + game
-- `ui/` - Per componenti riusabili
+**Present from the start in template:**
+- `constants/` - Always useful even for small projects
+- `systems/` - Logger and base architecture
+- `utils/` - Common helpers
+- `scenes/` - Even a simple game has at least menu + game
+- `ui/` - For reusable components
 
-**Aggiungere quando serve:**
-- `entities/` - Quando hai 3+ tipi di oggetti di gioco con logica simile
+**Add when needed:**
+- `entities/` - When you have 3+ types of game objects with similar logic
   - Player, Enemy, Bullet, Powerup, etc.
-  - Utile per factory pattern e object pooling
-- Sottomoduli in `systems/` man mano che servono
-  - State machine quando hai 2+ scene
-  - Asset manager quando hai molte risorse
-  - Input handler per rebinding tasti
+  - Useful for factory pattern and object pooling
+- Submodules in `systems/` as needed
+  - State machine when you have 2+ scenes
+  - Asset manager when you have many resources
+  - Input handler for key rebinding
 
-**Regola pratica:**
-Se copi/incolli lo stesso tipo di codice 3 volte → estrai in un modulo dedicato.
+**Practical rule:**
+If you copy/paste the same type of code 3 times → extract into a dedicated module.
 
 ## Run
 
 ```bash
-# Sviluppo normale (mostra INFO, WARNING, ERROR)
+# Normal development (shows INFO, WARNING, ERROR)
 love .
 
-# Con debug logging (mostra anche DEBUG - SOLO TRAMITE VSCODE con Lua Local Debugger)
+# With debug logging (also shows DEBUG - ONLY VIA VSCODE with Lua Local Debugger)
 love . --debug
 ```
 
 ## VS Code Debug
 
-Configurazione `.vscode/launch.json`:
+`.vscode/launch.json` configuration:
 ```json
 {
     "version": "0.2.0",
@@ -350,5 +350,5 @@ Configurazione `.vscode/launch.json`:
 }
 ```
 
-Richiede estensione: **Local Lua Debugger** (tomblind)
-F5 per lanciare, breakpoint funzionano su assegnazioni variabili e inizio funzioni.
+Requires extension: **Local Lua Debugger** (tomblind)
+F5 to launch, breakpoints work on variable assignments and function starts.
