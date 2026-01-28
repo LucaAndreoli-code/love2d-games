@@ -40,7 +40,15 @@ local gameOverFont = nil
 
 -- Enemy sprite
 local enemySprite = nil
-local enemySpriteScale = 1
+local enemySpriteScale = 2
+
+-- Enemy formation (Space Invaders style)
+local formation = {
+    direction = 1,           -- 1 = right, -1 = left
+    speed = gameConst.ENEMY_BASE_SPEED,
+    dropDistance = 20,       -- How far enemies drop when hitting edge
+    edgeMargin = 50          -- Distance from screen edge before turning
+}
 
 -- AABB collision detection
 local function checkCollision(ax, ay, aw, ah, bx, by, bw, bh)
@@ -80,61 +88,48 @@ local function createShipCanvas(grid)
     return canvas
 end
 
-local function isOverlappingWithExisting(x, y, width, height, minDistance)
-    for _, enemy in ipairs(enemies) do
-        local dx = (x + width / 2) - (enemy.x + enemy.width / 2)
-        local dy = (y + height / 2) - (enemy.y + enemy.height / 2)
-        local distance = math.sqrt(dx * dx + dy * dy)
-        if distance < minDistance then
-            return true
-        end
-    end
-    return false
-end
-
-local function spawnEnemy(rowOffset)
-    local size = gameConst.ENEMY_SIZE
-    local minDistance = size * 2.5 -- Minimum distance between enemies
-    local maxAttempts = 20
-    local x, y
-
-    -- Try to find a non-overlapping position
-    for _ = 1, maxAttempts do
-        x = math.random(gameConst.ENEMY_SPAWN_MIN_X, gameConst.ENEMY_SPAWN_MAX_X)
-        y = -size - rowOffset - math.random(0, 50)
-
-        if not isOverlappingWithExisting(x, y, size, size, minDistance) then
-            break
-        end
-    end
-
-    -- Sinusoidal movement parameters
-    local sineAmplitude = math.random(30, 80)      -- How far left/right it moves
-    local sineFrequency = math.random(15, 35) / 10 -- How fast it oscillates (1.5 to 3.5)
-    local sinePhase = math.random() * math.pi * 2  -- Random starting phase
-
-    table.insert(enemies, {
-        x = x,
-        y = y,
-        baseX = x, -- Store original X for sinusoidal calculation
-        width = size,
-        height = size,
-        health = gameConst.ENEMY_HEALTH,
-        speed = gameConst.ENEMY_BASE_SPEED * wave.speedMultiplier,
-        -- Sinusoidal movement
-        sineAmplitude = sineAmplitude,
-        sineFrequency = sineFrequency,
-        sinePhase = sinePhase,
-        timeAlive = 0
-    })
+-- Get actual enemy size with scale applied
+local function getEnemySize()
+    return gameConst.ENEMY_SIZE * enemySpriteScale
 end
 
 local function spawnWave()
-    local rowSpacing = gameConst.ENEMY_SIZE * 3
-    for i = 1, wave.enemyCount do
-        local rowOffset = math.floor((i - 1) / 5) * rowSpacing -- 5 enemies per row
-        spawnEnemy(rowOffset)
+    local size = getEnemySize()
+    local cols = 11  -- Classic Space Invaders has 11 columns
+    local rows = 5   -- and 5 rows
+
+    -- Adjust rows based on wave (more enemies as waves progress)
+    rows = math.min(5 + math.floor((wave.current - 1) / 2), 7)
+
+    local spacingX = size + 12
+    local spacingY = size + 8
+
+    -- Calculate formation width and center it
+    local formationWidth = cols * spacingX
+    local startX = (scaling.GAME_WIDTH - formationWidth) / 2
+    local startY = 80
+
+    for row = 1, rows do
+        for col = 1, cols do
+            local x = startX + (col - 1) * spacingX
+            local y = startY + (row - 1) * spacingY
+
+            table.insert(enemies, {
+                x = x,
+                y = y,
+                width = size,
+                height = size,
+                health = gameConst.ENEMY_HEALTH,
+                row = row,
+                col = col
+            })
+        end
     end
+
+    -- Reset formation direction and set speed based on wave
+    formation.direction = 1
+    formation.speed = gameConst.ENEMY_BASE_SPEED * wave.speedMultiplier
+
     wave.waitingForNext = false
 end
 
@@ -172,6 +167,10 @@ local function resetGame()
     wave.delayTimer = 0
     wave.waitingForNext = false
 
+    -- Reset formation
+    formation.direction = 1
+    formation.speed = gameConst.ENEMY_BASE_SPEED
+
     -- Reset score and HUD
     score = 0
     hud.setLives(player.lives)
@@ -190,8 +189,7 @@ function gameplay.load(data)
     -- Load enemy sprite
     enemySprite = love.graphics.newImage("assets/sprites/enemy.png")
     enemySprite:setFilter("nearest", "nearest") -- Pixel-perfect scaling
-    -- Calculate scale to match ENEMY_SIZE
-    enemySpriteScale = (gameConst.ENEMY_SIZE / enemySprite:getWidth()) * 2
+    -- Scale is set to 2x at module level (enemySpriteScale = 2)
 
     shipData = data
 
@@ -314,33 +312,68 @@ local function updateBullets(dt)
 end
 
 local function updateEnemies(dt)
+    if #enemies == 0 then return end
+
+    -- Classic Space Invaders movement: all enemies move together
+    -- Check if any enemy hits the edge
+    local hitEdge = false
+    local size = getEnemySize()
+
+    for _, enemy in ipairs(enemies) do
+        if formation.direction == 1 then
+            -- Moving right, check right edge
+            if enemy.x + size >= scaling.GAME_WIDTH - formation.edgeMargin then
+                hitEdge = true
+                break
+            end
+        else
+            -- Moving left, check left edge
+            if enemy.x <= formation.edgeMargin then
+                hitEdge = true
+                break
+            end
+        end
+    end
+
+    -- If hit edge, drop down and change direction
+    if hitEdge then
+        formation.direction = formation.direction * -1
+        for _, enemy in ipairs(enemies) do
+            enemy.y = enemy.y + formation.dropDistance
+        end
+
+        -- Speed up slightly when changing direction (classic behavior)
+        formation.speed = formation.speed * 1.02
+    end
+
+    -- Move all enemies horizontally
+    local moveX = formation.direction * formation.speed * dt
     for i = #enemies, 1, -1 do
         local enemy = enemies[i]
+        enemy.x = enemy.x + moveX
 
-        -- Update time alive for sinusoidal movement
-        enemy.timeAlive = enemy.timeAlive + dt
+        -- Check if enemies reached the bottom (game over condition in classic)
+        if enemy.y + size >= scaling.GAME_HEIGHT - 100 then
+            -- Enemies reached player zone - lose a life
+            player.lives = player.lives - 1
+            hud.setLives(player.lives)
 
-        -- Vertical movement (descending)
-        enemy.y = enemy.y + enemy.speed * dt
-
-        -- Update base X position as enemy descends (for proper sine wave center)
-        enemy.baseX = enemy.baseX or enemy.x
-
-        -- Sinusoidal horizontal movement
-        local sineOffset = enemy.sineAmplitude * math.sin(enemy.timeAlive * enemy.sineFrequency + enemy.sinePhase)
-        enemy.x = enemy.baseX + sineOffset
-
-        -- Clamp X to screen bounds
-        enemy.x = math.max(gameConst.ENEMY_SPAWN_MIN_X, math.min(gameConst.ENEMY_SPAWN_MAX_X, enemy.x))
-
-        -- Remove if off screen
-        if enemy.y > scaling.GAME_HEIGHT then
-            table.remove(enemies, i)
+            if player.lives <= 0 then
+                gameState = "gameover"
+            else
+                -- Clear enemies and spawn new wave
+                enemies = {}
+                wave.waitingForNext = true
+                wave.delayTimer = gameConst.WAVE_DELAY
+            end
+            return
         end
     end
 end
 
 local function checkBulletEnemyCollisions()
+    local initialEnemyCount = #enemies
+
     for bi = #bullets, 1, -1 do
         local bullet = bullets[bi]
 
@@ -360,6 +393,12 @@ local function checkBulletEnemyCollisions()
                     table.remove(enemies, ei)
                     score = score + gameConst.ENEMY_KILL_SCORE
                     hud.setScore(score)
+
+                    -- Classic Space Invaders: speed up as enemies die
+                    if #enemies > 0 then
+                        local speedBoost = 1 + (initialEnemyCount - #enemies) * 0.01
+                        formation.speed = formation.speed * speedBoost
+                    end
                 end
 
                 break
