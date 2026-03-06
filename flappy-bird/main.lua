@@ -95,11 +95,11 @@ function love.draw()
     end
 
     if GameState.playing then
-        love.graphics.print(GameState.score, 10, 10)
         love.graphics.draw(Bird, Player.x, Player.y)
         for i, _ in ipairs(Pipes) do
             DrawPipe(i)
         end
+        love.graphics.print(GameState.score, 10, 10)
     end
 
     if not GameState.playing and GameState.lost then
