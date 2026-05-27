@@ -47,6 +47,11 @@ game.ENEMY_SPAWN_MIN_X = 50
 game.ENEMY_SPAWN_MAX_X = 750
 game.ENEMY_KILL_SCORE = 100
 
+-- Enemy step movement (Space Invaders style)
+game.ENEMY_STEP_SIZE = 12          -- pixels per step
+game.ENEMY_TICK_MAX = 0.5         -- seconds between steps (full grid)
+game.ENEMY_TICK_MIN = 0.08        -- seconds between steps (last enemy)
+
 -- Wave settings
 game.WAVE_BASE_ENEMIES = 5
 game.WAVE_ENEMIES_INCREMENT = 2

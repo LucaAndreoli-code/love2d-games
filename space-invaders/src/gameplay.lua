@@ -40,14 +40,16 @@ local gameOverFont = nil
 
 -- Enemy sprite
 local enemySprite = nil
-local enemySpriteScale = 2
+local enemySpriteScale = 1.7
 
 -- Enemy formation (Space Invaders style)
 local formation = {
     direction = 1,           -- 1 = right, -1 = left
     speed = gameConst.ENEMY_BASE_SPEED,
     dropDistance = 20,       -- How far enemies drop when hitting edge
-    edgeMargin = 50          -- Distance from screen edge before turning
+    edgeMargin = 50,         -- Distance from screen edge before turning
+    tickTimer = 0,           -- Accumulator for step movement
+    totalEnemies = 1         -- Used to scale tick interval
 }
 
 -- AABB collision detection
@@ -126,9 +128,11 @@ local function spawnWave()
         end
     end
 
-    -- Reset formation direction and set speed based on wave
+    -- Reset formation
     formation.direction = 1
     formation.speed = gameConst.ENEMY_BASE_SPEED * wave.speedMultiplier
+    formation.tickTimer = 0
+    formation.totalEnemies = #enemies
 
     wave.waitingForNext = false
 end
@@ -170,6 +174,8 @@ local function resetGame()
     -- Reset formation
     formation.direction = 1
     formation.speed = gameConst.ENEMY_BASE_SPEED
+    formation.tickTimer = 0
+    formation.totalEnemies = 1
 
     -- Reset score and HUD
     score = 0
@@ -311,57 +317,57 @@ local function updateBullets(dt)
     end
 end
 
+local function getTickInterval()
+    -- Interval shrinks linearly from TICK_MAX (full grid) to TICK_MIN (1 enemy)
+    local ratio = math.max(0, (#enemies - 1)) / math.max(1, formation.totalEnemies - 1)
+    return gameConst.ENEMY_TICK_MIN + ratio * (gameConst.ENEMY_TICK_MAX - gameConst.ENEMY_TICK_MIN)
+end
+
 local function updateEnemies(dt)
     if #enemies == 0 then return end
 
-    -- Classic Space Invaders movement: all enemies move together
-    -- Check if any enemy hits the edge
+    formation.tickTimer = formation.tickTimer + dt
+    if formation.tickTimer < getTickInterval() then return end
+    formation.tickTimer = 0
+
+    -- Check if any enemy hits the edge before this step
     local hitEdge = false
     local size = getEnemySize()
+    local step = gameConst.ENEMY_STEP_SIZE
 
     for _, enemy in ipairs(enemies) do
         if formation.direction == 1 then
-            -- Moving right, check right edge
-            if enemy.x + size >= scaling.GAME_WIDTH - formation.edgeMargin then
+            if enemy.x + size + step >= scaling.GAME_WIDTH - formation.edgeMargin then
                 hitEdge = true
                 break
             end
         else
-            -- Moving left, check left edge
-            if enemy.x <= formation.edgeMargin then
+            if enemy.x - step <= formation.edgeMargin then
                 hitEdge = true
                 break
             end
         end
     end
 
-    -- If hit edge, drop down and change direction
     if hitEdge then
         formation.direction = formation.direction * -1
         for _, enemy in ipairs(enemies) do
             enemy.y = enemy.y + formation.dropDistance
         end
-
-        -- Speed up slightly when changing direction (classic behavior)
-        formation.speed = formation.speed * 1.02
     end
 
-    -- Move all enemies horizontally
-    local moveX = formation.direction * formation.speed * dt
+    -- Move all enemies one step horizontally
     for i = #enemies, 1, -1 do
         local enemy = enemies[i]
-        enemy.x = enemy.x + moveX
+        enemy.x = enemy.x + formation.direction * step
 
-        -- Check if enemies reached the bottom (game over condition in classic)
         if enemy.y + size >= scaling.GAME_HEIGHT - 100 then
-            -- Enemies reached player zone - lose a life
             player.lives = player.lives - 1
             hud.setLives(player.lives)
 
             if player.lives <= 0 then
                 gameState = "gameover"
             else
-                -- Clear enemies and spawn new wave
                 enemies = {}
                 wave.waitingForNext = true
                 wave.delayTimer = gameConst.WAVE_DELAY
@@ -372,8 +378,6 @@ local function updateEnemies(dt)
 end
 
 local function checkBulletEnemyCollisions()
-    local initialEnemyCount = #enemies
-
     for bi = #bullets, 1, -1 do
         local bullet = bullets[bi]
 
@@ -393,12 +397,6 @@ local function checkBulletEnemyCollisions()
                     table.remove(enemies, ei)
                     score = score + gameConst.ENEMY_KILL_SCORE
                     hud.setScore(score)
-
-                    -- Classic Space Invaders: speed up as enemies die
-                    if #enemies > 0 then
-                        local speedBoost = 1 + (initialEnemyCount - #enemies) * 0.01
-                        formation.speed = formation.speed * speedBoost
-                    end
                 end
 
                 break
